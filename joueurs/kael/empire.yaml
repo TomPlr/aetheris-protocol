@@ -1,8 +1,8 @@
 # Généré par engine/tick.mjs — ne pas éditer.
 version: 1
 joueur: kael
-tick: 2
-score_total: 100
+tick: 3
+score_total: 200
 points_militaires: 0
 rang: 999
 alliance: null
@@ -18,12 +18,12 @@ planetes:
       total: 221
     ressources:
       ferrum:
-        stock: 752
+        stock: 1094
         production_par_utj: 72
         capacite: 100000
       lumen:
-        stock: 701
-        production_par_utj: 20
+        stock: 799
+        production_par_utj: 42
         capacite: 100000
       plasmide:
         stock: 0
@@ -34,7 +34,7 @@ planetes:
       consommation: 0
     batiments:
       mine_ferrum: 1
-      extracteur_lumen: 0
+      extracteur_lumen: 1
       synthetiseur_plasmide: 0
       centrale_solaire: 0
       depot: 0
@@ -42,8 +42,8 @@ planetes:
       chantier_spatial: 0
       laboratoire: 0
     file_chantier:
-      - batiment: extracteur_lumen
-        niveau_cible: 1
+      - batiment: mine_ferrum
+        niveau_cible: 2
         fin_utj: 2
     file_construction: []
     flotte_au_sol: {}
