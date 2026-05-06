@@ -1,0 +1,1081 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>AETHERIS — Concept de jeu</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg-0: #05070d;
+    --bg-1: #0a0e1a;
+    --bg-2: #111728;
+    --bg-3: #1a2238;
+    --line: rgba(120, 160, 220, 0.12);
+    --line-strong: rgba(120, 180, 240, 0.22);
+    --ink: #e6ecf5;
+    --ink-dim: #8a96b0;
+    --ink-faint: #525c75;
+    --cyan: #5ee0ff;
+    --cyan-dim: #2a90b8;
+    --violet: #a875ff;
+    --orange: #ff9a3c;
+    --orange-dim: #c25a14;
+    --red: #ff5b6e;
+    --green: #4be58a;
+    --gold: #e8c062;
+
+    --font-sans: 'Space Grotesk', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+    --font-serif: 'Cormorant Garamond', serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg-0); color: var(--ink); font-family: var(--font-sans); }
+  body {
+    background:
+      radial-gradient(ellipse 80% 50% at 50% 0%, rgba(94, 224, 255, 0.04), transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 30%, rgba(168, 117, 255, 0.05), transparent 60%),
+      radial-gradient(ellipse 60% 50% at 20% 70%, rgba(255, 154, 60, 0.03), transparent 60%),
+      var(--bg-0);
+    min-height: 100vh;
+  }
+  /* Starfield */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background-image:
+      radial-gradient(1px 1px at 12% 18%, rgba(255,255,255,0.6), transparent 50%),
+      radial-gradient(1px 1px at 28% 72%, rgba(255,255,255,0.45), transparent 50%),
+      radial-gradient(1px 1px at 51% 35%, rgba(255,255,255,0.5), transparent 50%),
+      radial-gradient(1px 1px at 67% 88%, rgba(255,255,255,0.35), transparent 50%),
+      radial-gradient(1px 1px at 84% 22%, rgba(255,255,255,0.55), transparent 50%),
+      radial-gradient(1px 1px at 95% 64%, rgba(255,255,255,0.4), transparent 50%),
+      radial-gradient(1px 1px at 7% 91%, rgba(255,255,255,0.5), transparent 50%),
+      radial-gradient(1px 1px at 41% 8%, rgba(94,224,255,0.5), transparent 50%),
+      radial-gradient(1px 1px at 73% 47%, rgba(168,117,255,0.4), transparent 50%);
+    background-size: 100% 100%;
+  }
+  main { position: relative; z-index: 1; }
+
+  /* ────────── Layout ────────── */
+  .container { max-width: 1320px; margin: 0 auto; padding: 0 32px; }
+  .container-wide { max-width: 1480px; margin: 0 auto; padding: 0 32px; }
+
+  /* ────────── Top bar ────────── */
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    background: rgba(5,7,13,0.72);
+    border-bottom: 1px solid var(--line);
+  }
+  .topbar-inner {
+    max-width: 1480px; margin: 0 auto; padding: 14px 32px;
+    display: flex; align-items: center; gap: 32px;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand-mark {
+    width: 28px; height: 28px; position: relative;
+  }
+  .brand-mark::before, .brand-mark::after {
+    content: ''; position: absolute; inset: 0;
+    border: 1.5px solid var(--cyan);
+    border-radius: 50%;
+  }
+  .brand-mark::after {
+    inset: 6px; border-color: var(--orange);
+    box-shadow: 0 0 12px rgba(255,154,60,0.5);
+  }
+  .brand-name {
+    font-family: var(--font-sans);
+    font-weight: 600; letter-spacing: 0.32em; font-size: 13px;
+  }
+  .brand-name span { color: var(--cyan); }
+  .topnav { display: flex; gap: 4px; flex: 1; flex-wrap: wrap; }
+  .topnav a {
+    color: var(--ink-dim); text-decoration: none;
+    font-size: 12px; padding: 8px 12px; border-radius: 6px;
+    letter-spacing: 0.06em; transition: color 0.2s, background 0.2s;
+  }
+  .topnav a:hover { color: var(--ink); background: rgba(94,224,255,0.06); }
+  .topbar-meta {
+    font-family: var(--font-mono); font-size: 11px;
+    color: var(--ink-faint); letter-spacing: 0.08em;
+  }
+  .topbar-meta span { color: var(--cyan-dim); }
+
+  /* ────────── Hero ────────── */
+  .hero { padding: 120px 0 80px; position: relative; overflow: hidden; }
+  .hero-grid { position: absolute; inset: 0; opacity: 0.25; pointer-events: none;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 80px 80px;
+    mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black, transparent 70%);
+  }
+  .hero-eyebrow {
+    font-family: var(--font-mono); font-size: 11px; color: var(--cyan);
+    letter-spacing: 0.4em; margin-bottom: 28px; display: flex; align-items: center; gap: 14px;
+  }
+  .hero-eyebrow::before { content: ''; width: 36px; height: 1px; background: var(--cyan); }
+  .hero h1 {
+    font-family: var(--font-sans);
+    font-size: clamp(56px, 9vw, 132px);
+    font-weight: 600; letter-spacing: -0.04em; line-height: 0.95;
+    margin: 0 0 24px; color: var(--ink);
+  }
+  .hero h1 em {
+    font-style: normal; color: transparent;
+    background: linear-gradient(135deg, var(--cyan) 0%, var(--violet) 60%, var(--orange) 100%);
+    -webkit-background-clip: text; background-clip: text;
+  }
+  .hero-tag {
+    font-family: var(--font-serif); font-style: italic;
+    font-size: clamp(20px, 2.4vw, 30px);
+    color: var(--ink-dim); max-width: 780px; line-height: 1.4;
+    margin: 0 0 48px;
+  }
+  .hero-meta {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px;
+    background: var(--line); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+    margin-top: 64px;
+  }
+  .hero-meta > div { background: var(--bg-0); padding: 20px 24px; }
+  .hero-meta dt { font-family: var(--font-mono); font-size: 10px; color: var(--ink-faint); letter-spacing: 0.2em; margin-bottom: 8px; }
+  .hero-meta dd { margin: 0; font-size: 15px; color: var(--ink); }
+
+  /* ────────── Sections ────────── */
+  section.doc { padding: 100px 0; border-top: 1px solid var(--line); }
+  .section-head { display: flex; align-items: baseline; gap: 24px; margin-bottom: 56px; }
+  .section-num {
+    font-family: var(--font-mono); font-size: 12px; color: var(--cyan);
+    letter-spacing: 0.2em;
+  }
+  .section-title {
+    font-size: clamp(32px, 4vw, 48px); font-weight: 600;
+    letter-spacing: -0.02em; margin: 0; line-height: 1;
+  }
+  .section-title em { font-style: normal; color: var(--orange); }
+  .section-lead {
+    font-family: var(--font-serif); font-size: 22px; line-height: 1.5;
+    color: var(--ink-dim); max-width: 800px; margin: -24px 0 56px 0;
+    font-style: italic;
+  }
+
+  /* ────────── Cards / blocks ────────── */
+  .panel {
+    background: linear-gradient(180deg, rgba(26,34,56,0.4), rgba(10,14,26,0.4));
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 28px;
+    position: relative;
+  }
+  .panel::before {
+    content: ''; position: absolute; top: 0; left: 0; width: 14px; height: 14px;
+    border-top: 1px solid var(--cyan); border-left: 1px solid var(--cyan);
+  }
+  .panel::after {
+    content: ''; position: absolute; bottom: 0; right: 0; width: 14px; height: 14px;
+    border-bottom: 1px solid var(--cyan); border-right: 1px solid var(--cyan);
+  }
+  .panel-label {
+    font-family: var(--font-mono); font-size: 10px; color: var(--cyan);
+    letter-spacing: 0.24em; margin-bottom: 12px;
+  }
+
+  /* Name candidates */
+  .names {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
+  }
+  .name-card {
+    padding: 36px 28px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: linear-gradient(180deg, rgba(26,34,56,0.3), rgba(5,7,13,0.6));
+    position: relative; overflow: hidden;
+  }
+  .name-card.primary {
+    border-color: rgba(94,224,255,0.4);
+    background: linear-gradient(180deg, rgba(94,224,255,0.06), rgba(5,7,13,0.6));
+    box-shadow: 0 0 60px -20px rgba(94,224,255,0.4);
+  }
+  .name-card-tag {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.24em;
+    color: var(--ink-faint); margin-bottom: 16px;
+  }
+  .name-card.primary .name-card-tag { color: var(--orange); }
+  .name-card-name {
+    font-size: 42px; font-weight: 600; letter-spacing: -0.02em;
+    margin: 0 0 8px;
+  }
+  .name-card.primary .name-card-name { color: var(--cyan); }
+  .name-card-meaning {
+    font-family: var(--font-serif); font-style: italic;
+    font-size: 16px; color: var(--ink-dim); margin: 0 0 20px;
+  }
+  .name-card-pitch { font-size: 13.5px; line-height: 1.6; color: var(--ink); }
+
+  /* Two col text */
+  .two-col {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 56px;
+  }
+  .prose { font-size: 15px; line-height: 1.7; color: var(--ink); }
+  .prose p { margin: 0 0 18px; }
+  .prose strong { color: var(--cyan); font-weight: 500; }
+  .prose em { color: var(--orange); font-style: normal; }
+
+  /* KPI / value cards */
+  .values { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--line); }
+  .value {
+    background: var(--bg-0); padding: 32px 24px;
+  }
+  .value-icon {
+    width: 32px; height: 32px; margin-bottom: 20px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--cyan);
+  }
+  .value-title { font-size: 16px; font-weight: 600; margin: 0 0 8px; letter-spacing: -0.01em; }
+  .value-desc { font-size: 13px; line-height: 1.55; color: var(--ink-dim); margin: 0; }
+
+  /* Tables */
+  table.gdd {
+    width: 100%; border-collapse: collapse;
+    font-size: 13px;
+  }
+  table.gdd th {
+    font-family: var(--font-mono); font-weight: 500; font-size: 10px;
+    letter-spacing: 0.2em; color: var(--cyan); text-align: left;
+    padding: 12px 14px; border-bottom: 1px solid var(--line-strong);
+  }
+  table.gdd td {
+    padding: 14px; border-bottom: 1px solid var(--line);
+    vertical-align: top; color: var(--ink);
+  }
+  table.gdd tr:hover td { background: rgba(94,224,255,0.03); }
+  table.gdd .mono { font-family: var(--font-mono); font-size: 11px; color: var(--cyan-dim); }
+  table.gdd .small { color: var(--ink-dim); font-size: 12px; }
+  table.gdd .pill {
+    display: inline-block; padding: 2px 8px; border-radius: 99px;
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em;
+    background: rgba(94,224,255,0.1); color: var(--cyan); border: 1px solid rgba(94,224,255,0.2);
+  }
+  table.gdd .pill.orange { background: rgba(255,154,60,0.1); color: var(--orange); border-color: rgba(255,154,60,0.25); }
+  table.gdd .pill.violet { background: rgba(168,117,255,0.1); color: var(--violet); border-color: rgba(168,117,255,0.25); }
+  table.gdd .pill.red { background: rgba(255,91,110,0.1); color: var(--red); border-color: rgba(255,91,110,0.25); }
+  table.gdd .pill.green { background: rgba(75,229,138,0.1); color: var(--green); border-color: rgba(75,229,138,0.25); }
+
+  /* ────────── Resources strip ────────── */
+  .resources-strip {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px;
+    background: var(--line); margin-bottom: 24px;
+  }
+  .resource {
+    background: var(--bg-0); padding: 28px 24px;
+    display: flex; align-items: center; gap: 18px;
+  }
+  .resource-glyph {
+    width: 56px; height: 56px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid currentColor; border-radius: 4px; position: relative;
+  }
+  .resource-glyph::before {
+    content: ''; position: absolute; inset: -1px;
+    border: 1px solid currentColor; border-radius: 4px; opacity: 0.3;
+    animation: pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100% { transform: scale(1); opacity: 0.3; } 50% { transform: scale(1.15); opacity: 0; } }
+  .resource.metal { color: var(--cyan); }
+  .resource.crystal { color: var(--violet); }
+  .resource.deuterium { color: var(--orange); }
+  .resource-info-name {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.24em;
+    color: var(--ink-faint); margin-bottom: 4px; text-transform: uppercase;
+  }
+  .resource-info-title { font-size: 22px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 4px; color: var(--ink); }
+  .resource-info-desc { font-size: 12px; color: var(--ink-dim); line-height: 1.5; }
+
+  /* Tech tree (visual) */
+  .techtree {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px;
+    position: relative;
+  }
+  .techtree-col {
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .techtree-col-head {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.2em;
+    color: var(--ink-faint); padding-bottom: 8px; border-bottom: 1px solid var(--line);
+    margin-bottom: 8px; text-align: center;
+  }
+  .tech-node {
+    background: rgba(26,34,56,0.4); border: 1px solid var(--line);
+    padding: 10px 12px; border-radius: 3px;
+    font-size: 12px; color: var(--ink);
+    position: relative;
+    transition: all 0.2s;
+  }
+  .tech-node:hover { border-color: var(--cyan); background: rgba(94,224,255,0.06); }
+  .tech-node-tier {
+    font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.15em;
+    color: var(--cyan-dim); margin-bottom: 2px;
+  }
+  .tech-node.t1 { border-left: 2px solid var(--cyan); }
+  .tech-node.t2 { border-left: 2px solid var(--violet); }
+  .tech-node.t3 { border-left: 2px solid var(--orange); }
+
+  /* RPS chart */
+  .rps {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1px;
+    background: var(--line); margin: 24px 0;
+  }
+  .rps-cell {
+    background: var(--bg-1); padding: 24px; text-align: center;
+  }
+  .rps-cell h4 { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.2em; color: var(--cyan); margin: 0 0 16px; }
+  .rps-arrow { font-family: var(--font-mono); color: var(--orange); margin: 8px 0; font-size: 18px; }
+
+  /* Roadmap */
+  .roadmap {
+    position: relative; padding-left: 32px;
+  }
+  .roadmap::before {
+    content: ''; position: absolute; left: 8px; top: 8px; bottom: 8px;
+    width: 1px; background: linear-gradient(180deg, var(--cyan), var(--violet), var(--orange));
+  }
+  .roadmap-step {
+    position: relative; padding-bottom: 40px;
+  }
+  .roadmap-step::before {
+    content: ''; position: absolute; left: -28px; top: 6px;
+    width: 9px; height: 9px; border: 1.5px solid var(--cyan);
+    background: var(--bg-0); border-radius: 50%;
+  }
+  .roadmap-step.v2::before { border-color: var(--violet); }
+  .roadmap-step.v3::before { border-color: var(--orange); }
+  .roadmap-tag {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.2em;
+    color: var(--cyan-dim); margin-bottom: 4px;
+  }
+  .roadmap-step.v2 .roadmap-tag { color: var(--violet); }
+  .roadmap-step.v3 .roadmap-tag { color: var(--orange); }
+  .roadmap-title { font-size: 19px; font-weight: 600; margin: 0 0 8px; }
+  .roadmap-text { font-size: 14px; line-height: 1.6; color: var(--ink-dim); margin: 0 0 12px; }
+  .roadmap-features { display: flex; gap: 8px; flex-wrap: wrap; }
+  .roadmap-feat {
+    font-family: var(--font-mono); font-size: 10.5px; padding: 4px 8px;
+    border: 1px solid var(--line); border-radius: 3px;
+    color: var(--ink-dim);
+  }
+
+  /* Mockup wrappers */
+  .mockup-wrap {
+    margin: 32px 0 64px;
+  }
+  .mockup-caption {
+    display: flex; align-items: baseline; gap: 16px; margin-bottom: 16px;
+  }
+  .mockup-caption .num {
+    font-family: var(--font-mono); font-size: 11px; color: var(--orange); letter-spacing: 0.2em;
+  }
+  .mockup-caption h3 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
+  .mockup-caption p { margin: 0 0 0 auto; font-size: 13px; color: var(--ink-dim); max-width: 480px; line-height: 1.5; }
+  .mockup-frame {
+    border: 1px solid var(--line-strong);
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--bg-0);
+    box-shadow: 0 30px 80px -20px rgba(0,0,0,0.6), 0 0 60px -30px rgba(94,224,255,0.2);
+  }
+
+  /* ────────── Footer ────────── */
+  footer.foot {
+    padding: 80px 0 60px; border-top: 1px solid var(--line);
+    margin-top: 80px;
+  }
+  .foot-inner { display: flex; justify-content: space-between; align-items: flex-end; gap: 32px; flex-wrap: wrap; }
+  .foot-mark { font-size: 64px; font-weight: 600; letter-spacing: -0.04em; line-height: 0.9; }
+  .foot-mark em { font-style: normal; color: var(--cyan); }
+  .foot-meta { font-family: var(--font-mono); font-size: 11px; color: var(--ink-faint); line-height: 1.8; letter-spacing: 0.06em; }
+
+  /* Utilities */
+  .stack-24 > * + * { margin-top: 24px; }
+  .stack-16 > * + * { margin-top: 16px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .text-mono { font-family: var(--font-mono); }
+  .text-cyan { color: var(--cyan); }
+  .text-orange { color: var(--orange); }
+  .text-dim { color: var(--ink-dim); }
+  .label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.24em; color: var(--ink-faint); text-transform: uppercase; }
+
+  @media (max-width: 900px) {
+    .hero-meta { grid-template-columns: repeat(2, 1fr); }
+    .names, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    .grid-2, .two-col { grid-template-columns: 1fr; gap: 24px; }
+    .values { grid-template-columns: repeat(2, 1fr); }
+    .resources-strip { grid-template-columns: 1fr; }
+    .techtree { grid-template-columns: 1fr 1fr; }
+    .topnav { display: none; }
+    .mockup-caption { flex-direction: column; gap: 8px; }
+    .mockup-caption p { margin-left: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="brand-mark"></div>
+      <div class="brand-name">AETHE<span>R</span>IS</div>
+    </div>
+    <nav class="topnav">
+      <a href="#concept">01 Concept</a>
+      <a href="#mecaniques">02 Mécaniques</a>
+      <a href="#militaire">03 Militaire</a>
+      <a href="#qol">04 QoL & Modernité</a>
+      <a href="#monetisation">05 Monétisation</a>
+      <a href="#mockups">06 Écrans</a>
+      <a href="#roadmap">07 Roadmap</a>
+    </nav>
+    <div class="topbar-meta">GDD <span>v0.1</span> // INTERNE</div>
+  </div>
+</div>
+
+<main>
+
+<!-- ═══════════ HERO ═══════════ -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="container">
+    <div class="hero-eyebrow">GAME DESIGN DOCUMENT // STRATÉGIE SPATIALE PERSISTANTE</div>
+    <h1>Construis. Conquiers.<br>Endure dans l'<em>éternité</em>.</h1>
+    <p class="hero-tag">Un MMO de stratégie spatiale lent, profond et impitoyable — héritier de l'âge d'or des navigateurs, repensé pour l'écran d'aujourd'hui. Tu pars d'une planète. Tu finis avec un empire. Tu laisses une trace.</p>
+
+    <dl class="hero-meta">
+      <div><dt>GENRE</dt><dd>4X / MMO Spatial Persistant</dd></div>
+      <div><dt>PLATEFORMES</dt><dd>Web · iOS · Android · PWA</dd></div>
+      <div><dt>SESSION</dt><dd>5 min/j → 2 h/j (modulable)</dd></div>
+      <div><dt>PUBLIC</dt><dd>30–45 ans · Vétérans nostalgiques</dd></div>
+    </dl>
+  </div>
+</section>
+
+<!-- ═══════════ 01 CONCEPT ═══════════ -->
+<section class="doc" id="concept">
+  <div class="container">
+    <div class="section-head">
+      <span class="section-num">01</span>
+      <h2 class="section-title">Concept &amp; <em>identité</em></h2>
+    </div>
+    <p class="section-lead">Trois noms candidats. Un seul portera le projet. Tous partagent la même promesse : un univers spatial persistant où chaque heure compte, où la stratégie se mesure en semaines, et où les rivalités se construisent en années.</p>
+
+    <div class="names">
+      <div class="name-card primary">
+        <div class="name-card-tag">★ RECOMMANDATION</div>
+        <h3 class="name-card-name">AETHERIS</h3>
+        <p class="name-card-meaning">« le souffle des hauteurs » — l'éther, la matière première du cosmos.</p>
+        <p class="name-card-pitch">Sonne ancien et premium, latin sans être pompeux. Évoque à la fois l'éther carburant des flottes et le souffle métaphysique d'un empire qui dure.</p>
+      </div>
+      <div class="name-card">
+        <div class="name-card-tag">OPTION 02</div>
+        <h3 class="name-card-name">UMBRAL</h3>
+        <p class="name-card-meaning">la frontière sombre où la lumière s'arrête.</p>
+        <p class="name-card-pitch">Court, frappant. Tonalité plus militaire et tendue — bon pour un PvP plus brutal, plus claustrophobe. Marque mémorable.</p>
+      </div>
+      <div class="name-card">
+        <div class="name-card-tag">OPTION 03</div>
+        <h3 class="name-card-name">SOLAR ÉCHO</h3>
+        <p class="name-card-meaning">l'écho d'une étoile bien après son extinction.</p>
+        <p class="name-card-pitch">Plus narratif, plus lyrique. Sous-titre possible : « Ages of the Long Empire ». Bon pour appuyer le pilier émotionnel / nostalgique.</p>
+      </div>
+    </div>
+
+    <div class="two-col" style="margin-top: 80px;">
+      <div>
+        <div class="label" style="margin-bottom: 16px;">PITCH</div>
+        <p class="prose" style="font-family: var(--font-serif); font-style: italic; font-size: 22px; line-height: 1.45; color: var(--ink);">
+          « Bâtis un empire stellaire <strong>en temps réel</strong>, dans un univers <em>partagé</em> qui ne s'arrête jamais — où une mine produit pendant que tu dors, où une flotte voyage pendant que tu travailles, et où une alliance forgée à 3 h du matin tient pour des saisons entières. »
+        </p>
+      </div>
+      <div>
+        <div class="label" style="margin-bottom: 16px;">PILIERS DE FEELING</div>
+        <div class="prose">
+          <p><strong>Lenteur stratégique.</strong> Une mine met des heures à monter de niveau. Un voyage interstellaire dure 40 minutes. Le temps n'est pas un obstacle, c'est <em>la mécanique</em>.</p>
+          <p><strong>Empire qui s'accumule.</strong> Chaque construction reste. Chaque colonie est ta colonie. Pas de wipe abusif — uniquement des saisons compétitives sur serveur opt-in.</p>
+          <p><strong>Adrénaline froide.</strong> L'alerte arrive. Une flotte ennemie est en route. Tu as 38 minutes pour décider : sauver, riposter, ou disparaître.</p>
+          <p><strong>Mémoire collective.</strong> Les alliances, les rancunes, les classements — tout persiste. Ton nom existe, gravé dans le serveur, longtemps après ta dernière connexion.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="values" style="margin-top: 80px;">
+      <div class="value">
+        <div class="value-icon">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.4">
+            <circle cx="16" cy="16" r="11"/><circle cx="16" cy="16" r="5"/><line x1="16" y1="3" x2="16" y2="7"/><line x1="16" y1="25" x2="16" y2="29"/>
+          </svg>
+        </div>
+        <h4 class="value-title">Persistance</h4>
+        <p class="value-desc">L'univers tourne 24/7. Ton empire respire en ton absence. Tes décisions ont une portée mesurée en jours, pas en runs.</p>
+      </div>
+      <div class="value">
+        <div class="value-icon">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.4">
+            <polygon points="16,3 28,11 28,21 16,29 4,21 4,11"/><polygon points="16,9 22,12 22,20 16,23 10,20 10,12"/>
+          </svg>
+        </div>
+        <h4 class="value-title">Profondeur lisible</h4>
+        <p class="value-desc">Chaque système est simple en surface, riche en interactions. On comprend en 10 minutes, on maîtrise en 10 mois.</p>
+      </div>
+      <div class="value">
+        <div class="value-icon">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.4">
+            <path d="M5 22 L16 6 L27 22 Z"/><path d="M5 22 L11 22 L13 26 L19 26 L21 22 L27 22"/>
+          </svg>
+        </div>
+        <h4 class="value-title">PvP tendu</h4>
+        <p class="value-desc">Les attaques sont des événements. Pas de bouton "défense facile" — l'espionnage, la diplomatie et la planification sont tes vrais boucliers.</p>
+      </div>
+      <div class="value">
+        <div class="value-icon">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.4">
+            <rect x="5" y="5" width="22" height="22"/><line x1="5" y1="11" x2="27" y2="11"/><line x1="11" y1="5" x2="11" y2="27"/><circle cx="20" cy="20" r="3" fill="currentColor"/>
+          </svg>
+        </div>
+        <h4 class="value-title">Équité</h4>
+        <p class="value-desc">Aucun bouton « gagner ». Le confort se monétise, jamais la puissance. Le temps et l'astuce sont les seules monnaies de combat.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 02 MÉCANIQUES ═══════════ -->
+<section class="doc" id="mecaniques">
+  <div class="container">
+    <div class="section-head">
+      <span class="section-num">02</span>
+      <h2 class="section-title">Ressources, planètes &amp; <em>économie</em></h2>
+    </div>
+    <p class="section-lead">Trois ressources canoniques héritées du genre, deux ressources stratégiques de fin de partie. Pas un de plus — on évite le sac à dos. Tout doit tenir dans une seule barre d'en-tête, lisible d'un coup d'œil sur mobile.</p>
+
+    <h3 style="font-size: 14px; font-family: var(--font-mono); letter-spacing: 0.2em; color: var(--cyan); margin: 0 0 16px;">▸ RESSOURCES PRIMAIRES</h3>
+    <div class="resources-strip">
+      <div class="resource metal">
+        <div class="resource-glyph">
+          <svg width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.6">
+            <rect x="4" y="9" width="18" height="10"/><line x1="9" y1="9" x2="9" y2="19"/><line x1="17" y1="9" x2="17" y2="19"/>
+          </svg>
+        </div>
+        <div>
+          <div class="resource-info-name">RESSOURCE 01</div>
+          <div class="resource-info-title">Ferrum</div>
+          <div class="resource-info-desc">Volume. Squelette de tout : coques, bâtiments, ferrailles. Abondant et lourd.</div>
+        </div>
+      </div>
+      <div class="resource crystal">
+        <div class="resource-glyph">
+          <svg width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.6">
+            <polygon points="13,3 22,10 19,22 7,22 4,10"/><line x1="13" y1="3" x2="13" y2="22"/>
+          </svg>
+        </div>
+        <div>
+          <div class="resource-info-name">RESSOURCE 02</div>
+          <div class="resource-info-title">Lumen</div>
+          <div class="resource-info-desc">Précision. Cristaux conducteurs pour électronique, capteurs, technologies de tier 2+.</div>
+        </div>
+      </div>
+      <div class="resource deuterium">
+        <div class="resource-glyph">
+          <svg width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.6">
+            <path d="M13 3 C7 12 7 14 13 23 C19 14 19 12 13 3 Z"/><circle cx="13" cy="14" r="3" fill="currentColor"/>
+          </svg>
+        </div>
+        <div>
+          <div class="resource-info-name">RESSOURCE 03</div>
+          <div class="resource-info-title">Plasmide</div>
+          <div class="resource-info-desc">Carburant. Toute flotte en consomme à chaque vol. La logistique de la guerre.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="panel">
+        <div class="panel-label">▸ RESSOURCE STRATÉGIQUE A — DÉBLOQUÉE T2</div>
+        <h4 style="margin: 0 0 8px; font-size: 22px;"><span style="color: var(--violet);">Singularité</span> <span class="text-dim text-mono" style="font-size: 12px; letter-spacing: 0.1em;">// SNG</span></h4>
+        <p class="prose" style="font-size: 13px; margin: 0;">Récolte instable récupérée des trous noirs et des champs gravitationnels. Ne se stocke qu'en quantités limitées — utilisée pour les technologies de fin de partie et les vaisseaux capitaux.</p>
+      </div>
+      <div class="panel">
+        <div class="panel-label">▸ RESSOURCE STRATÉGIQUE B — RECHERCHE PURE</div>
+        <h4 style="margin: 0 0 8px; font-size: 22px;"><span style="color: var(--orange);">Influence</span> <span class="text-dim text-mono" style="font-size: 12px; letter-spacing: 0.1em;">// INF</span></h4>
+        <p class="prose" style="font-size: 13px; margin: 0;">Capital diplomatique généré par les actes (alliances, contrats, victoires renommées). Dépensé pour traités, embargos, missions saisonnières. <em>Politique</em>, pas industrielle.</p>
+      </div>
+    </div>
+
+    <!-- Système de planètes -->
+    <div style="margin-top: 80px;">
+      <h3 style="font-size: 14px; font-family: var(--font-mono); letter-spacing: 0.2em; color: var(--cyan); margin: 0 0 16px;">▸ SYSTÈME DE PLANÈTES</h3>
+      <table class="gdd">
+        <thead>
+          <tr>
+            <th style="width: 18%;">Type</th>
+            <th style="width: 14%;">Spécialisation</th>
+            <th style="width: 14%;">Capacité (Tier max)</th>
+            <th>Effet & feeling</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong style="color: var(--ink);">Tellurique</strong><div class="small">Roche & métaux lourds</div></td>
+            <td><span class="pill">Ferrum</span></td>
+            <td class="mono">+30 % MIN_FER</td>
+            <td>Le pilier de tout empire. Point de départ habituel. Stable, prévisible, robuste.</td>
+          </tr>
+          <tr>
+            <td><strong style="color: var(--ink);">Cristalline</strong><div class="small">Géodes profondes</div></td>
+            <td><span class="pill violet">Lumen</span></td>
+            <td class="mono">+30 % MIN_LUM</td>
+            <td>Beauté froide, atmosphère raréfiée. Indispensable pour la branche tech.</td>
+          </tr>
+          <tr>
+            <td><strong style="color: var(--ink);">Volcanique</strong><div class="small">Activité tectonique</div></td>
+            <td><span class="pill orange">Plasmide</span></td>
+            <td class="mono">+30 % SYNT_PLA</td>
+            <td>Hostile mais riche. Idéale pour soutenir des flottes massives.</td>
+          </tr>
+          <tr>
+            <td><strong style="color: var(--ink);">Glacée</strong><div class="small">Calotte permanente</div></td>
+            <td><span class="pill green">Stockage</span></td>
+            <td class="mono">+50 % CAP_STK</td>
+            <td>Coffre-fort de l'empire. Souvent placée en arrière, loin des frontières chaudes.</td>
+          </tr>
+          <tr>
+            <td><strong style="color: var(--ink);">Gazière</strong><div class="small">Géant atmosphérique</div></td>
+            <td><span class="pill">Énergie</span></td>
+            <td class="mono">+40 % CEN_ENR</td>
+            <td>Production énergétique massive. Anomalies météo périodiques (events).</td>
+          </tr>
+          <tr>
+            <td><strong style="color: var(--ink);">Anomalie</strong><div class="small">Découverte fin de partie</div></td>
+            <td><span class="pill red">Singularité</span></td>
+            <td class="mono">+1 SLOT_SNG</td>
+            <td>Rare, contestée, glorieuse. Une seule par système. Casus belli garanti.</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="prose" style="font-size: 13px; color: var(--ink-dim); margin-top: 16px;">
+        <strong>Règle de colonisation</strong> — Empire de départ : 1 planète. Limite progressive de 9 planètes (mécanique classique du genre), augmentable jusqu'à 15 via l'arbre Politique. Coloniser = engager un vaisseau colon (consommé) + 24 h de déploiement.
+      </p>
+    </div>
+
+    <!-- Tech tree -->
+    <div style="margin-top: 80px;">
+      <h3 style="font-size: 14px; font-family: var(--font-mono); letter-spacing: 0.2em; color: var(--cyan); margin: 0 0 16px;">▸ ARBRES TECHNOLOGIQUES (5 BRANCHES)</h3>
+      <div class="techtree">
+        <div class="techtree-col">
+          <div class="techtree-col-head">INDUSTRIE</div>
+          <div class="tech-node t1"><div class="tech-node-tier">T1 · 0–4</div>Robotique de chantier</div>
+          <div class="tech-node t1"><div class="tech-node-tier">T1 · 0–8</div>Automation minière</div>
+          <div class="tech-node t2"><div class="tech-node-tier">T2 · 4–12</div>Nano-construction</div>
+          <div class="tech-node t2"><div class="tech-node-tier">T2 · 6–14</div>Recyclage avancé</div>
+          <div class="tech-node t3"><div class="tech-node-tier">T3 · 12–18</div>Ingénierie gravimétrique</div>
+        </div>
+        <div class="techtree-col">
+          <div class="techtree-col-head">ÉNERGÉTIQUE</div>
+          <div class="tech-node t1"><div class="tech-node-tier">T1 · 0–6</div>Fusion contrôlée</div>
+          <div class="tech-node t1"><div class="tech-node-tier">T1 · 0–10</div>Drives à impulsion</div>
+          <div class="tech-node t2"><div class="tech-node-tier">T2 · 8–14</div>Drive hyper-spatial</div>
+          <div class="tech-node t2"><div class="tech-node-tier">T2 · 6–12</div>Bouclier graviton</div>
+          <div class="tech-node t3"><div class="tech-node-tier">T3 · 14–20</div>Distorsion sub-luminique</div>
+        </div>
+        <div class="techtree-col">
+          <div class="techtree-col-head">ARMEMENT</div>
+          <div class="tech-node t1"><div class="tech-node-tier">T1 · 0–8</div>Canons cinétiques</div>
+          <div class="tech-node t1"><div class="tech-node-tier">T1 · 2–10</div>Lasers focalisés</div>
+          <div class="tech-node t2"><div class="tech-node-tier">T2 · 8–14</div>Plasma orbital</div>
+          <div class="tech-node t2"><div class="tech-node-tier">T2 · 10–16</div>Missiles à charge creuse</div>
+          <div class="tech-node t3"><div class="tech-node-tier">T3 · 16–22</div>Ogive à singularité</div>
+        </div>
+        <div class="techtree-col">
+          <div class="techtree-col-head">RENSEIGNEMENT</div>
+          <div class="tech-node t1"><div class="tech-node-tier">T1 · 0–6</div>Sondes de scan</div>
+          <div class="tech-node t1"><div class="tech-node-tier">T1 · 4–10</div>Cryptographie</div>
+          <div class="tech-node t2"><div class="tech-node-tier">T2 · 6–12</div>Espionnage profond</div>
+          <div class="tech-node t2"><div class="tech-node-tier">T2 · 8–14</div>Brouillage actif</div>
+          <div class="tech-node t3"><div class="tech-node-tier">T3 · 14–18</div>Camouflage furtif</div>
+        </div>
+        <div class="techtree-col">
+          <div class="techtree-col-head">POLITIQUE</div>
+          <div class="tech-node t1"><div class="tech-node-tier">T1 · 0–4</div>Diplomatie</div>
+          <div class="tech-node t1"><div class="tech-node-tier">T1 · 4–10</div>Marchés stellaires</div>
+          <div class="tech-node t2"><div class="tech-node-tier">T2 · 6–12</div>Doctrine impériale</div>
+          <div class="tech-node t2"><div class="tech-node-tier">T2 · 10–14</div>Gouverneurs autonomes</div>
+          <div class="tech-node t3"><div class="tech-node-tier">T3 · 14–20</div>Édit galactique</div>
+        </div>
+      </div>
+      <p class="prose" style="font-size: 13px; color: var(--ink-dim); margin-top: 24px;">
+        <strong>Logique d'arbre</strong> — chaque branche compte ~22 niveaux. Les niveaux T1 sont accessibles dès le départ, les T2 nécessitent un prérequis croisé (ex : <em>Drive hyper-spatial</em> exige <em>Fusion contrôlée 4</em>), les T3 verrouillent les vaisseaux capitaux et structures uniques. Spécialisation totale impossible avant ~6 mois de jeu — c'est intentionnel.
+      </p>
+    </div>
+
+    <!-- Bâtiments -->
+    <div style="margin-top: 80px;">
+      <h3 style="font-size: 14px; font-family: var(--font-mono); letter-spacing: 0.2em; color: var(--cyan); margin: 0 0 16px;">▸ BÂTIMENTS — 14 STRUCTURES PAR PLANÈTE</h3>
+      <table class="gdd">
+        <thead>
+          <tr>
+            <th>Bâtiment</th>
+            <th>Catégorie</th>
+            <th>Rôle</th>
+            <th>Feeling nostalgique</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Mine de Ferrum</strong></td><td><span class="pill">Production</span></td><td>+x/h Ferrum</td><td>Le tout premier clic. La progression palpable.</td></tr>
+          <tr><td><strong>Extracteur de Lumen</strong></td><td><span class="pill violet">Production</span></td><td>+x/h Lumen</td><td>Le moment où l'on sent l'empire devenir technique.</td></tr>
+          <tr><td><strong>Synthétiseur Plasmide</strong></td><td><span class="pill orange">Production</span></td><td>+x/h Plasmide</td><td>Le carburant des ambitions. Toujours juste limitant.</td></tr>
+          <tr><td><strong>Centrale Solaire</strong></td><td><span class="pill">Énergie</span></td><td>Énergie pour mines</td><td>Le panneau qui pivote au soleil. Image d'enfance.</td></tr>
+          <tr><td><strong>Réacteur à Fusion</strong></td><td><span class="pill">Énergie</span></td><td>Énergie haute densité</td><td>L'upgrade que tout le monde repousse trop longtemps.</td></tr>
+          <tr><td><strong>Dépôt fortifié</strong></td><td><span class="pill green">Stockage</span></td><td>Capacité × 1.5–8</td><td>Le filet de sécurité. Plein avant chaque déconnexion.</td></tr>
+          <tr><td><strong>Usine Robotique</strong></td><td><span class="pill">Industrie</span></td><td>Vitesse de chantier −</td><td>Le coup de turbo qui change tout. Niveau 10 = obsession.</td></tr>
+          <tr><td><strong>Nanite Prime</strong></td><td><span class="pill">Industrie</span></td><td>Vitesse × 4 (T3)</td><td>Le luxe absolu. Le jalon de fin d'année.</td></tr>
+          <tr><td><strong>Chantier Spatial</strong></td><td><span class="pill orange">Militaire</span></td><td>Construction de flotte</td><td>Le cœur battant des nuits d'attaque.</td></tr>
+          <tr><td><strong>Laboratoire</strong></td><td><span class="pill">R&amp;D</span></td><td>Vitesse de recherche</td><td>Le bâtiment qu'on planifie sur 6 mois.</td></tr>
+          <tr><td><strong>Silo de Missiles</strong></td><td><span class="pill red">Défense</span></td><td>Stocke missiles inter-planétaires</td><td>L'arme dissuasive — qu'on espère ne pas utiliser.</td></tr>
+          <tr><td><strong>Terminal Marchand</strong></td><td><span class="pill green">Économie</span></td><td>Marché commun, ratio amélioré</td><td>L'art du négoce. La tension du bon prix.</td></tr>
+          <tr><td><strong>Centre Diplomatique</strong></td><td><span class="pill violet">Politique</span></td><td>Alliances, traités, embargos</td><td>L'arrivée à l'âge adulte de l'empire.</td></tr>
+          <tr><td><strong>Phare Galactique</strong></td><td><span class="pill red">Mythique</span></td><td>1 / serveur — bonus à l'alliance</td><td>Le building dont on parle dans les conférences IRL.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 03 MILITAIRE ═══════════ -->
+<section class="doc" id="militaire">
+  <div class="container">
+    <div class="section-head">
+      <span class="section-num">03</span>
+      <h2 class="section-title">Système militaire &amp; <em>combat</em></h2>
+    </div>
+    <p class="section-lead">Combat délibéré, jamais aléatoire. Une bataille se prépare en heures, se résout en secondes, se médite pendant des jours. La règle <em>pierre-papier-ciseaux</em> doit être lisible en 3 minutes — la maîtrise, en 3 mois.</p>
+
+    <h3 style="font-size: 14px; font-family: var(--font-mono); letter-spacing: 0.2em; color: var(--cyan); margin: 0 0 16px;">▸ FAMILLE DE VAISSEAUX</h3>
+    <table class="gdd">
+      <thead>
+        <tr>
+          <th>Classe</th>
+          <th>Rôle</th>
+          <th>Coque</th>
+          <th>Frappe</th>
+          <th>Vitesse</th>
+          <th>Cargo</th>
+          <th>Bat</th>
+          <th>Feeling</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Sondes</strong><div class="small">Recon</div></td>
+          <td><span class="pill">Espionnage</span></td>
+          <td class="mono">10</td><td class="mono">0</td><td class="mono">100M</td><td class="mono">5</td><td class="mono">T1</td>
+          <td>Nuit blanche à scanner les voisins. Adrénaline silencieuse.</td>
+        </tr>
+        <tr>
+          <td><strong>Chasseur léger</strong><div class="small">Light Fighter</div></td>
+          <td><span class="pill">Anti-cargo</span></td>
+          <td class="mono">400</td><td class="mono">50</td><td class="mono">12.5K</td><td class="mono">50</td><td class="mono">T1</td>
+          <td>L'essaim. Pas cher, sacrifiable, redoutable en masse.</td>
+        </tr>
+        <tr>
+          <td><strong>Chasseur lourd</strong><div class="small">Heavy Fighter</div></td>
+          <td><span class="pill orange">Counter-light</span></td>
+          <td class="mono">1.0K</td><td class="mono">150</td><td class="mono">10K</td><td class="mono">100</td><td class="mono">T1</td>
+          <td>Le moyenneur. Filet contre les chasseurs légers.</td>
+        </tr>
+        <tr>
+          <td><strong>Croiseur</strong><div class="small">Cruiser</div></td>
+          <td><span class="pill orange">Mid-line</span></td>
+          <td class="mono">2.7K</td><td class="mono">400</td><td class="mono">15K</td><td class="mono">800</td><td class="mono">T2</td>
+          <td>Le pivot tactique. Mobile et puissant.</td>
+        </tr>
+        <tr>
+          <td><strong>Frégate</strong><div class="small">Frigate</div></td>
+          <td><span class="pill violet">Anti-croiseur</span></td>
+          <td class="mono">3.5K</td><td class="mono">700</td><td class="mono">12K</td><td class="mono">500</td><td class="mono">T2</td>
+          <td>Le « counter check ». Discrète mais dévastatrice.</td>
+        </tr>
+        <tr>
+          <td><strong>Cuirassé</strong><div class="small">Battleship</div></td>
+          <td><span class="pill red">Capital de ligne</span></td>
+          <td class="mono">6.0K</td><td class="mono">1.0K</td><td class="mono">9K</td><td class="mono">1.5K</td><td class="mono">T2</td>
+          <td>La présence physique. La menace assumée.</td>
+        </tr>
+        <tr>
+          <td><strong>Destroyer</strong><div class="small">Destroyer</div></td>
+          <td><span class="pill red">Anti-cuirassé</span></td>
+          <td class="mono">11K</td><td class="mono">2.0K</td><td class="mono">5K</td><td class="mono">2.0K</td><td class="mono">T3</td>
+          <td>Le concasseur. La paix vue d'en face.</td>
+        </tr>
+        <tr>
+          <td><strong>Dreadnought</strong><div class="small">Capital ship</div></td>
+          <td><span class="pill red">Hégémonie</span></td>
+          <td class="mono">75K</td><td class="mono">25K</td><td class="mono">2.5K</td><td class="mono">10K</td><td class="mono">T3 + SNG</td>
+          <td>Le rêve. 6 mois pour en posséder un. 8 secondes pour le perdre.</td>
+        </tr>
+        <tr>
+          <td><strong>Cargo lourd</strong><div class="small">Hauler</div></td>
+          <td><span class="pill green">Logistique</span></td>
+          <td class="mono">1.2K</td><td class="mono">5</td><td class="mono">7.5K</td><td class="mono">25K</td><td class="mono">T1</td>
+          <td>L'oléoduc de l'empire.</td>
+        </tr>
+        <tr>
+          <td><strong>Recycleur</strong><div class="small">Salvage</div></td>
+          <td><span class="pill green">Post-combat</span></td>
+          <td class="mono">1.6K</td><td class="mono">1</td><td class="mono">2K</td><td class="mono">20K</td><td class="mono">T2</td>
+          <td>La justice cosmique. L'attaquant pille, le recycleur en récupère 30 %.</td>
+        </tr>
+        <tr>
+          <td><strong>Vaisseau colon</strong><div class="small">Colony</div></td>
+          <td><span class="pill">Expansion</span></td>
+          <td class="mono">3.0K</td><td class="mono">0</td><td class="mono">2.5K</td><td class="mono">7.5K</td><td class="mono">T1</td>
+          <td>Le commencement d'une nouvelle planète.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3 style="font-size: 14px; font-family: var(--font-mono); letter-spacing: 0.2em; color: var(--cyan); margin: 56px 0 16px;">▸ PIERRE-PAPIER-CISEAUX</h3>
+    <div class="rps">
+      <div class="rps-cell">
+        <h4>Léger / Cargo</h4>
+        <div style="font-size: 14px; color: var(--ink); margin-bottom: 8px;"><strong style="color: var(--cyan);">Chasseurs légers</strong></div>
+        <div class="rps-arrow">▼ écrase</div>
+        <div style="font-size: 13px; color: var(--ink-dim);">Cargos &amp; sondes</div>
+      </div>
+      <div class="rps-cell">
+        <h4>Mid-line</h4>
+        <div style="font-size: 14px; color: var(--ink); margin-bottom: 8px;"><strong style="color: var(--violet);">Croiseurs / Frégates</strong></div>
+        <div class="rps-arrow">▼ écrase</div>
+        <div style="font-size: 13px; color: var(--ink-dim);">Chasseurs (lég. &amp; lourd)</div>
+      </div>
+      <div class="rps-cell">
+        <h4>Capitaux</h4>
+        <div style="font-size: 14px; color: var(--ink); margin-bottom: 8px;"><strong style="color: var(--orange);">Cuirassés / Destroyers</strong></div>
+        <div class="rps-arrow">▼ écrase</div>
+        <div style="font-size: 13px; color: var(--ink-dim);">Mid-line</div>
+      </div>
+    </div>
+    <p class="prose" style="font-size: 13px; color: var(--ink-dim); margin-top: 8px; text-align: center;">
+      Boucle fermée : <strong>Capitaux → Mid-line → Léger → (anti-cargo) → … → Capitaux</strong>. Les <em>frégates</em> et <em>destroyers</em> agissent comme « bonus damage » au sein de leur classe.
+    </p>
+
+    <h3 style="font-size: 14px; font-family: var(--font-mono); letter-spacing: 0.2em; color: var(--cyan); margin: 56px 0 16px;">▸ MÉCANIQUE DE COMBAT</h3>
+    <div class="grid-2">
+      <div class="prose">
+        <p><strong>Résolution en rondes (6 max).</strong> Chaque ronde, les deux flottes échangent des salves. Coque + bouclier sont régénérés à 100 % entre chaque ronde tant que le bouclier tient. Une coque réduite à ≤ 30 % a 70 % de chances d'être détruite. Modèle hérité du genre, lisible et déterministe.</p>
+        <p><strong>Recyclage.</strong> 30 % des métaux des épaves restent dans un champ de débris au-dessus de la planète attaquée. Les <em>recycleurs</em> peuvent y aller — y compris ceux du défenseur, qui peut donc « moralement gagner » une défaite.</p>
+      </div>
+      <div class="prose">
+        <p><strong>Espionnage.</strong> Sondes envoyées en avant. Plus on en envoie, plus on voit (ressources → flotte → défenses → tech). Risque : les sondes peuvent être détectées et provoquer une riposte. Le rapport d'espionnage est <em>l'objet</em> le plus précieux du jeu.</p>
+        <p><strong>Missiles inter-planétaires.</strong> Frappent les <em>défenses fixes</em> uniquement, pas la flotte. Les missiles d'interception annulent les missiles offensifs en vol. Mécanique nucléaire — utilisée 3 fois par saison sur tout le serveur, mais elle <em>doit exister</em>.</p>
+      </div>
+    </div>
+
+    <div style="margin-top: 56px;">
+      <h3 style="font-size: 14px; font-family: var(--font-mono); letter-spacing: 0.2em; color: var(--cyan); margin: 0 0 16px;">▸ MISSIONS DE FLOTTE</h3>
+      <table class="gdd">
+        <thead>
+          <tr><th style="width: 18%;">Mission</th><th style="width: 12%;">Carburant</th><th style="width: 14%;">Risque</th><th>Effet</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Attaque</strong></td><td class="mono">×1.0</td><td><span class="pill red">Élevé</span></td><td>Combat. Pillage de 50 % du non-protégé. Champ de débris.</td></tr>
+          <tr><td><strong>Espionnage</strong></td><td class="mono">×0.4</td><td><span class="pill orange">Moyen</span></td><td>Rapport gradué selon le nombre de sondes envoyées.</td></tr>
+          <tr><td><strong>Transport</strong></td><td class="mono">×1.0</td><td><span class="pill">Faible</span></td><td>Livre des ressources entre planètes amies.</td></tr>
+          <tr><td><strong>Stationnement</strong></td><td class="mono">×0.5</td><td><span class="pill">Aucun</span></td><td>La flotte se gare sur une planète amie (alliance).</td></tr>
+          <tr><td><strong>Recyclage</strong></td><td class="mono">×1.0</td><td><span class="pill green">Faible</span></td><td>Récupère un champ de débris.</td></tr>
+          <tr><td><strong>Colonisation</strong></td><td class="mono">×1.0</td><td><span class="pill">Aucun</span></td><td>Engage un vaisseau colon. Disparaît à l'arrivée.</td></tr>
+          <tr><td><strong>Maraude</strong></td><td class="mono">×0.7</td><td><span class="pill orange">Moyen</span></td><td>Attaque expéditionnaire / Pirates IA. Génère <em>Influence</em>.</td></tr>
+          <tr><td><strong>Repli (Save Fleet)</strong></td><td class="mono">×1.5</td><td><span class="pill">Aucun</span></td><td>Vol vers un point inhabité, retour automatique. <em>Le geste défensif emblématique du genre.</em></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 04 QoL ═══════════ -->
+<section class="doc" id="qol">
+  <div class="container">
+    <div class="section-head">
+      <span class="section-num">04</span>
+      <h2 class="section-title">Qualité de vie &amp; <em>modernité</em></h2>
+    </div>
+    <p class="section-lead">On garde l'âme. On enlève les frictions sans intérêt. Tout ce qui était <em>punissant pour rien</em> en 2005 disparaît ; tout ce qui était <em>punissant avec sens</em> reste.</p>
+
+    <div class="grid-2">
+      <div>
+        <h3 class="text-mono text-cyan" style="font-size: 12px; letter-spacing: 0.2em; margin: 0 0 16px;">▸ ON GARDE</h3>
+        <ul class="prose" style="list-style: none; padding: 0; margin: 0;">
+          <li style="padding: 14px 0; border-bottom: 1px solid var(--line);">⏱ <strong>Temps réel persistant.</strong> Les chantiers prennent des heures. Les flottes voyagent en minutes ou en heures. <em>Non négociable.</em></li>
+          <li style="padding: 14px 0; border-bottom: 1px solid var(--line);">📍 <strong>Coordonnées en G:S:P.</strong> Galaxie : Système : Position. La grammaire de la communauté.</li>
+          <li style="padding: 14px 0; border-bottom: 1px solid var(--line);">🔍 <strong>Espionnage avant attaque.</strong> Toujours.</li>
+          <li style="padding: 14px 0; border-bottom: 1px solid var(--line);">💥 <strong>Champs de débris.</strong> Le cycle attaque/recyclage/contre-attaque.</li>
+          <li style="padding: 14px 0; border-bottom: 1px solid var(--line);">🛡️ <strong>Save fleet.</strong> Le réflexe nocturne.</li>
+          <li style="padding: 14px 0;">📊 <strong>Classement public.</strong> Les leaders font la météo du serveur.</li>
+        </ul>
+      </div>
+      <div>
+        <h3 class="text-mono text-orange" style="font-size: 12px; letter-spacing: 0.2em; margin: 0 0 16px;">▸ ON AMÉLIORE</h3>
+        <ul class="prose" style="list-style: none; padding: 0; margin: 0;">
+          <li style="padding: 14px 0; border-bottom: 1px solid var(--line);">📋 <strong>File de construction infinie.</strong> Plus jamais "à reconnecter dans 4h".</li>
+          <li style="padding: 14px 0; border-bottom: 1px solid var(--line);">🔔 <strong>Push notifications</strong> — fin de chantier, attaque entrante (T-30 min), missile en vol.</li>
+          <li style="padding: 14px 0; border-bottom: 1px solid var(--line);">🌙 <strong>Mode hors ligne.</strong> Production calculée précisément à la reconnexion. Pas de cap punitif sur 24h.</li>
+          <li style="padding: 14px 0; border-bottom: 1px solid var(--line);">🤝 <strong>Outils d'alliance natifs</strong> — chat, plan d'attaque coordonné, partage de ressources, calculatrice de combat intégrée.</li>
+          <li style="padding: 14px 0; border-bottom: 1px solid var(--line);">🎬 <strong>Replay de combat</strong> — visualisation tour-par-tour avec courbes de coque/bouclier.</li>
+          <li style="padding: 14px 0; border-bottom: 1px solid var(--line);">📅 <strong>Saisons & events</strong> — 4 mois par cycle, leaderboard saisonnier, événements narratifs (Comète, Émergence pirate, Marché noir).</li>
+          <li style="padding: 14px 0; border-bottom: 1px solid var(--line);">🎯 <strong>Onboarding cinétique</strong> — premier empire bâti en 30 min de tutoriel jouable.</li>
+          <li style="padding: 14px 0;">📱 <strong>Parité mobile/desktop totale.</strong> Tu commandes une attaque depuis ton métro, tu confirmes depuis ton bureau.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 05 MONÉTISATION ═══════════ -->
+<section class="doc" id="monetisation">
+  <div class="container">
+    <div class="section-head">
+      <span class="section-num">05</span>
+      <h2 class="section-title">Monétisation &amp; <em>équité</em></h2>
+    </div>
+    <p class="section-lead">Aucun bouton « gagner ». La règle d'or : <em>le pay-to-comfort est sain ; le pay-to-power tue le serveur</em>. On vend du temps de cerveau libéré, pas de la puissance brute.</p>
+
+    <table class="gdd">
+      <thead>
+        <tr>
+          <th style="width: 25%;">Item</th>
+          <th style="width: 14%;">Prix indicatif</th>
+          <th style="width: 14%;">Type</th>
+          <th>Justification éthique</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Officier — Ingénieur</strong><div class="small">+1 file de chantier permanente</div></td><td class="mono">5 €/mois</td><td><span class="pill green">Confort</span></td><td>Économise des clics. N'augmente pas la puissance produite.</td></tr>
+        <tr><td><strong>Officier — Amiral</strong><div class="small">+1 slot de flotte simultanée</div></td><td class="mono">5 €/mois</td><td><span class="pill green">Confort</span></td><td>Permet plus de missions parallèles, mais pas plus puissantes.</td></tr>
+        <tr><td><strong>Officier — Géologue</strong><div class="small">+10 % production minière</div></td><td class="mono">5 €/mois</td><td><span class="pill orange">Puissance douce</span></td><td>Cap dur 10 %, jamais cumulable. <em>À débattre — la frontière.</em></td></tr>
+        <tr><td><strong>Skin de planète / vaisseau</strong></td><td class="mono">3–8 €</td><td><span class="pill">Cosmétique</span></td><td>Effets visuels purs.</td></tr>
+        <tr><td><strong>Pass saisonnier</strong><div class="small">Récompenses cosmétiques exclusives</div></td><td class="mono">12 €/saison</td><td><span class="pill">Cosmétique + log</span></td><td>Carnet d'XP. Aucun item d'échange.</td></tr>
+        <tr><td><strong>Marché noir</strong><div class="small">— SUPPRIMÉ</div></td><td class="mono">—</td><td><span class="pill red">Refusé</span></td><td>Vendre des ressources contre du cash brise l'économie.</td></tr>
+        <tr><td><strong>Boost « production × 2 pendant 12h »</strong><div class="small">— SUPPRIMÉ</div></td><td class="mono">—</td><td><span class="pill red">Refusé</span></td><td>Variante du précédent. Refusé pour les mêmes raisons.</td></tr>
+      </tbody>
+    </table>
+    <p class="prose" style="font-size: 13px; color: var(--ink-dim); margin-top: 16px;">
+      <strong>Modèle cible</strong> — F2P intégral. ARPU visé : 4–6 €/mois. Conversion : ~6 % des connectés mensuels. Tout l'argent passe par le confort, les cosmétiques et le pass saisonnier. Les classements compétitifs sont toujours <em>opt-in serveurs « hardcore »</em> — sans aucune monétisation active.
+    </p>
+  </div>
+</section>
+
+<!-- ═══════════ 06 MOCKUPS ═══════════ -->
+<section class="doc" id="mockups">
+  <div class="container-wide">
+    <div class="section-head">
+      <span class="section-num">06</span>
+      <h2 class="section-title">Direction artistique &amp; <em>écrans</em></h2>
+    </div>
+    <p class="section-lead">Mockups d'écrans clés en haute-fidélité. Toutes les valeurs et libellés sont indicatifs ; la grammaire visuelle (sombre profond, accents cyan/orange, typographie technique) est, elle, normative.</p>
+
+    <div id="mockups-root"></div>
+  </div>
+</section>
+
+<!-- ═══════════ 07 ROADMAP ═══════════ -->
+<section class="doc" id="roadmap">
+  <div class="container">
+    <div class="section-head">
+      <span class="section-num">07</span>
+      <h2 class="section-title">Roadmap de <em>développement</em></h2>
+    </div>
+    <p class="section-lead">Trois phases. Le MVP suffit à émouvoir un vétéran. Les phases 2 et 3 transforment l'émotion en accroche durable.</p>
+
+    <div class="roadmap">
+      <div class="roadmap-step">
+        <div class="roadmap-tag">PHASE 01 · MVP · 6–9 MOIS</div>
+        <h3 class="roadmap-title">L'empire essentiel</h3>
+        <p class="roadmap-text">Tout ce qu'il faut pour qu'un joueur s'inscrive un dimanche soir, construise ses 5 mines, et parte attaquer un voisin le mercredi suivant. Le bouquet émotionnel central, sans rien autour.</p>
+        <div class="roadmap-features">
+          <span class="roadmap-feat">3 ressources</span>
+          <span class="roadmap-feat">9 planètes max</span>
+          <span class="roadmap-feat">14 bâtiments</span>
+          <span class="roadmap-feat">8 vaisseaux</span>
+          <span class="roadmap-feat">Combat 6-rondes</span>
+          <span class="roadmap-feat">Espionnage + recyclage</span>
+          <span class="roadmap-feat">Marché basique</span>
+          <span class="roadmap-feat">Push notifications</span>
+          <span class="roadmap-feat">Web + PWA mobile</span>
+        </div>
+      </div>
+      <div class="roadmap-step v2">
+        <div class="roadmap-tag">PHASE 02 · LIVE · +6 MOIS</div>
+        <h3 class="roadmap-title">L'âge social</h3>
+        <p class="roadmap-text">Tout ce qui transforme une bonne base en jeu communauté. Outils d'alliance, première saison, replays. C'est ici que la communauté commence à se nourrir d'elle-même.</p>
+        <div class="roadmap-features">
+          <span class="roadmap-feat">Alliances complètes</span>
+          <span class="roadmap-feat">Saisons (4 mois)</span>
+          <span class="roadmap-feat">Replay de combat</span>
+          <span class="roadmap-feat">Apps natives iOS/Android</span>
+          <span class="roadmap-feat">Missiles interplanétaires</span>
+          <span class="roadmap-feat">Skins cosmétiques</span>
+          <span class="roadmap-feat">Pass saisonnier</span>
+          <span class="roadmap-feat">Calculatrice de combat</span>
+        </div>
+      </div>
+      <div class="roadmap-step v3">
+        <div class="roadmap-tag">PHASE 03 · ENDGAME · +12 MOIS</div>
+        <h3 class="roadmap-title">L'horizon long</h3>
+        <p class="roadmap-text">Le meta-game qui retient les vétérans pendant 3 ans. Singularités, dreadnoughts, événements scénarisés trimestriels — la matière dont les souvenirs de raid sont faits.</p>
+        <div class="roadmap-features">
+          <span class="roadmap-feat">Singularité (T3)</span>
+          <span class="roadmap-feat">Dreadnoughts</span>
+          <span class="roadmap-feat">Anomalies / planètes uniques</span>
+          <span class="roadmap-feat">Phare Galactique</span>
+          <span class="roadmap-feat">Événements scénarisés</span>
+          <span class="roadmap-feat">Mode hardcore (serveurs wipe)</span>
+          <span class="roadmap-feat">API officielle / outils tiers</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="foot">
+  <div class="container">
+    <div class="foot-inner">
+      <div>
+        <div class="foot-mark">AETHE<em>R</em>IS</div>
+        <div class="foot-meta" style="margin-top: 16px;">
+          GAME DESIGN DOCUMENT &nbsp; · &nbsp; v0.1 &nbsp; · &nbsp; FR<br>
+          PRÉPARÉ POUR REVUE INTERNE &nbsp; · &nbsp; 2026
+        </div>
+      </div>
+      <div class="foot-meta" style="text-align: right;">
+        « ENDURE THROUGH THE LONG NIGHT. »<br>
+        — DEVISE D'ANCRAGE
+      </div>
+    </div>
+  </div>
+</footer>
+
+</main>
+
+<!-- React for mockups -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="mockups.jsx"></script>
+
+</body>
+</html>

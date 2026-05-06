@@ -1,0 +1,1779 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<title>AETHERIS · console</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Cormorant+SC:wght@400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink:        #ecdcb4;
+  --ink-2:      #e2cf9e;
+  --ink-3:      #d6c08a;
+  --ink-4:      #c4a868;
+  --hairline:   #a88a58;
+  --brass:      #8a5818;
+  --brass-2:    #5a380a;
+  --brass-dim:  #c4a060;
+  --phosphor:   #8a2410;
+  --phosphor-2: #a83820;
+  --phosphor-dim: #c89060;
+  --bone:       #3a2410;
+  --bone-2:     #1a0c02;
+  --bone-dim:   #7a5e38;
+  --rust:       #a82818;
+  --violet:     #5a3a6a;
+  --green:      #4a5e22;
+
+  --serif: "EB Garamond", "Cormorant Garamond", Georgia, serif;
+  --mono:  "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+  --display: "EB Garamond", Georgia, serif;
+  --caps: "Cormorant SC", "EB Garamond", serif;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--ink);
+  color: var(--bone);
+  font-family: var(--serif);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+  overflow: hidden;
+  font-variant-numeric: oldstyle-nums proportional-nums;
+  font-feature-settings: "onum" 1, "kern" 1, "liga" 1;
+  background-image:
+    radial-gradient(ellipse 90% 70% at 15% -5%, rgba(255,240,200,0.55), transparent 60%),
+    radial-gradient(ellipse 70% 60% at 110% 110%, rgba(140,80,20,0.10), transparent 55%),
+    radial-gradient(ellipse 100% 80% at 50% 50%, rgba(168,120,40,0.08), transparent 70%),
+    linear-gradient(180deg, #f0dcb0 0%, #d8be84 100%);
+}
+
+/* sepia ink mottle — paper imperfections */
+body::before {
+  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 1;
+  background-image:
+    radial-gradient(2px 2px at 17% 32%, rgba(90,55,18,0.22), transparent 50%),
+    radial-gradient(1.5px 1.5px at 73% 18%, rgba(120,75,28,0.18), transparent 50%),
+    radial-gradient(3px 3px at 41% 71%, rgba(90,55,18,0.14), transparent 50%),
+    radial-gradient(1.5px 1.5px at 88% 84%, rgba(140,80,30,0.20), transparent 50%),
+    radial-gradient(2px 2px at 9% 89%, rgba(90,55,18,0.16), transparent 50%),
+    radial-gradient(2.5px 2.5px at 55% 12%, rgba(140,40,20,0.14), transparent 50%),
+    radial-gradient(1px 1px at 28% 55%, rgba(90,55,18,0.20), transparent 50%),
+    radial-gradient(3px 3px at 64% 47%, rgba(120,75,28,0.10), transparent 50%),
+    radial-gradient(2px 2px at 82% 38%, rgba(90,55,18,0.18), transparent 50%);
+}
+/* paper grain — sepia noise on multiply */
+body::after {
+  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 2;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.35  0 0 0 0 0.22  0 0 0 0 0.10  0 0 0 0.5 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.6'/></svg>");
+  mix-blend-mode: multiply;
+  opacity: 0.28;
+}
+
+/* ─── shell ───────────────────────────────────────────────── */
+.shell {
+  position: relative; z-index: 3;
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  grid-template-columns: 220px 1fr 320px;
+  grid-template-areas:
+    "head head head"
+    "strip strip strip"
+    "nav main rail"
+    "foot foot foot";
+  height: 100vh;
+  gap: 0;
+}
+
+/* ─── header ──────────────────────────────────────────────── */
+.head {
+  grid-area: head;
+  display: flex; align-items: stretch;
+  border-bottom: 1px solid var(--hairline);
+  background: linear-gradient(180deg, rgba(18,34,54,0.6), rgba(8,17,28,0.3));
+}
+.brand {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 22px 12px;
+  border-right: 1px solid var(--hairline);
+  min-width: 220px;
+}
+.brand .mark {
+  width: 28px; height: 28px; flex: none;
+  border: 1px solid var(--brass);
+  display: grid; place-items: center;
+  position: relative;
+}
+.brand .mark::before {
+  content: ""; position: absolute; inset: 3px;
+  border: 1px solid var(--brass-dim);
+}
+.brand .mark::after {
+  content: "Æ"; font-family: var(--serif); font-style: italic; font-weight: 600;
+  font-size: 15px; color: var(--brass-2);
+  position: relative; z-index: 1;
+}
+.brand .name {
+  font-family: var(--serif); font-style: italic; font-weight: 500;
+  font-size: 22px; letter-spacing: 0.06em; color: var(--bone-2);
+  line-height: 1;
+}
+.brand .name b { font-style: normal; font-weight: 500; color: var(--brass-2); letter-spacing: 0.18em; font-size: 10px; display:block; margin-top: 4px; }
+
+.head-meta {
+  flex: 1; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 22px;
+}
+.tick-block { display: flex; align-items: baseline; gap: 18px; }
+.tick-block .label {
+  font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.28em;
+  text-transform: uppercase; color: var(--bone-dim);
+}
+.tick-block .value {
+  font-family: var(--display); font-size: 28px; color: var(--phosphor);
+  text-shadow: 0 1px 0 rgba(255,240,200,0.4);
+  line-height: 1;
+}
+.tick-block .countdown {
+  font-family: var(--mono); font-size: 11px; color: var(--brass-2);
+  letter-spacing: 0.1em;
+  padding: 4px 8px; border: 1px solid var(--brass-dim);
+  background: rgba(200,152,88,0.05);
+}
+
+.player-pick {
+  display: flex; align-items: center; gap: 12px;
+  padding: 6px 4px 6px 14px;
+  border-left: 1px solid var(--hairline); height: 100%;
+}
+.player-pick .who {
+  font-family: var(--serif); font-style: italic; font-size: 17px;
+  color: var(--bone-2); line-height: 1.1;
+}
+.player-pick .who small {
+  display: block; font-family: var(--mono); font-style: normal;
+  font-size: 9px; letter-spacing: 0.3em; color: var(--bone-dim);
+  text-transform: uppercase; margin-top: 2px;
+}
+.player-pick select {
+  appearance: none; -webkit-appearance: none;
+  background: transparent; border: 1px solid var(--hairline);
+  color: var(--phosphor); padding: 8px 26px 8px 10px;
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em;
+  cursor: pointer; text-transform: lowercase;
+  background-image: linear-gradient(45deg, transparent 50%, var(--brass) 50%),
+                    linear-gradient(135deg, var(--brass) 50%, transparent 50%);
+  background-position: calc(100% - 14px) center, calc(100% - 9px) center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+.player-pick select:focus { outline: 1px solid var(--phosphor-dim); }
+
+/* ─── resource strip ──────────────────────────────────────── */
+.strip {
+  grid-area: strip;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-bottom: 1px solid var(--hairline);
+  background: var(--ink-2);
+}
+.res {
+  position: relative;
+  padding: 14px 22px 16px;
+  border-right: 1px solid var(--hairline);
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  grid-template-rows: auto auto;
+  column-gap: 14px;
+  align-items: center;
+}
+.res:last-child { border-right: none; }
+.res .ico {
+  grid-row: 1 / 3;
+  width: 36px; height: 36px;
+  display: grid; place-items: center;
+  border: 1px solid var(--brass-dim);
+  background: radial-gradient(circle at 30% 30%, rgba(200,152,88,0.18), transparent 70%);
+}
+.res .ico svg { width: 22px; height: 22px; }
+.res .nm {
+  font-family: var(--serif); font-style: italic; font-size: 17px;
+  color: var(--bone-2); letter-spacing: 0.02em;
+}
+.res .nm small {
+  font-family: var(--mono); font-style: normal;
+  font-size: 9px; letter-spacing: 0.28em; color: var(--bone-dim);
+  text-transform: uppercase; margin-left: 8px;
+}
+.res .stock {
+  font-family: var(--display); font-size: 19px; color: var(--bone-2);
+  line-height: 1; text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.res .meta {
+  grid-column: 2 / 4;
+  display: flex; justify-content: space-between; align-items: center;
+  font-family: var(--mono); font-size: 10.5px;
+  color: var(--bone-dim); letter-spacing: 0.05em;
+  margin-top: 4px;
+}
+.res .prod { color: var(--green); }
+.res .prod.zero { color: var(--bone-dim); }
+.res .bar {
+  grid-column: 2 / 4;
+  height: 2px; background: var(--ink-4); position: relative;
+  margin-top: 6px;
+}
+.res .bar i {
+  position: absolute; left: 0; top: 0; bottom: 0;
+  background: linear-gradient(90deg, var(--brass-dim), var(--brass-2));
+  transition: width 1.2s cubic-bezier(.2,.7,.2,1);
+}
+.res .bar i.warn { background: linear-gradient(90deg, var(--rust), #ffaa66); }
+
+/* ferrum / lumen / plasmide / energie color hints */
+.res[data-r="ferrum"]    .ico { border-color: #a85a3d; background: radial-gradient(circle at 30% 30%, rgba(232,99,58,0.18), transparent 70%); }
+.res[data-r="lumen"]     .ico { border-color: var(--brass); background: radial-gradient(circle at 30% 30%, rgba(224,184,120,0.22), transparent 70%); }
+.res[data-r="plasmide"]  .ico { border-color: var(--violet); background: radial-gradient(circle at 30% 30%, rgba(154,134,212,0.18), transparent 70%); }
+.res[data-r="energie"]   .ico { border-color: var(--phosphor-dim); background: radial-gradient(circle at 30% 30%, rgba(200,88,56,0.18), transparent 70%); }
+
+/* ─── nav rail ────────────────────────────────────────────── */
+.nav {
+  grid-area: nav;
+  border-right: 1px solid var(--hairline);
+  background: linear-gradient(180deg, rgba(12,24,40,0.7), rgba(8,17,28,0.4));
+  padding: 18px 0;
+  display: flex; flex-direction: column; gap: 2px;
+  overflow-y: auto;
+}
+.nav .heading {
+  padding: 10px 22px 6px;
+  font-family: var(--mono); font-size: 9px; letter-spacing: 0.32em;
+  color: var(--bone-dim); text-transform: uppercase;
+}
+.nav button {
+  appearance: none; background: none; border: none; cursor: pointer;
+  display: flex; align-items: center; gap: 14px;
+  padding: 11px 22px;
+  font-family: var(--serif); font-style: italic; font-size: 16px;
+  color: var(--bone-dim);
+  letter-spacing: 0.02em;
+  position: relative;
+  text-align: left;
+  transition: color .15s;
+}
+.nav button .gl {
+  width: 18px; height: 18px; flex: none;
+  display: grid; place-items: center;
+  color: var(--brass-dim);
+  transition: color .15s;
+}
+.nav button:hover { color: var(--bone-2); }
+.nav button:hover .gl { color: var(--brass); }
+.nav button.on { color: var(--phosphor-2); }
+.nav button.on .gl { color: var(--phosphor); }
+.nav button.on::before {
+  content: ""; position: absolute; left: 0; top: 6px; bottom: 6px;
+  width: 2px; background: var(--phosphor);
+  box-shadow: 0 0 10px var(--phosphor);
+}
+.nav button .ct {
+  margin-left: auto;
+  font-family: var(--mono); font-style: normal; font-size: 10px;
+  color: var(--brass-dim); letter-spacing: 0.1em;
+}
+.nav button.on .ct { color: var(--brass-2); }
+
+/* ─── main panel ──────────────────────────────────────────── */
+.main {
+  grid-area: main;
+  overflow-y: auto;
+  padding: 24px 28px 28px;
+  position: relative;
+}
+
+.planet-head {
+  display: grid; grid-template-columns: 88px 1fr; gap: 22px;
+  align-items: center;
+  padding-bottom: 18px; margin-bottom: 22px;
+  border-bottom: 1px solid var(--hairline);
+  position: relative;
+}
+.planet-head::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -3px;
+  height: 1px; background: var(--hairline); opacity: 0.5;
+}
+.planet-glyph {
+  width: 88px; height: 88px; position: relative;
+  border: 1px solid var(--brass-dim);
+  display: grid; place-items: center;
+}
+.planet-glyph::before, .planet-glyph::after {
+  content: ""; position: absolute; width: 8px; height: 8px;
+  border: 1px solid var(--brass-dim);
+}
+.planet-glyph::before { top: -4px; left: -4px; border-right: none; border-bottom: none; }
+.planet-glyph::after { bottom: -4px; right: -4px; border-left: none; border-top: none; }
+.planet-glyph svg { width: 70px; height: 70px; }
+
+.planet-title {
+  font-family: var(--serif); font-style: italic; font-weight: 500;
+  font-size: 38px; line-height: 1; color: var(--bone-2);
+  letter-spacing: -0.005em;
+  margin: 0 0 8px;
+}
+.planet-title .em {
+  font-family: var(--display); font-style: normal;
+  color: var(--phosphor); font-size: 22px;
+  margin-right: 14px;
+  text-shadow: 0 1px 0 rgba(255,240,200,0.4);
+}
+.planet-sub {
+  display: flex; gap: 18px; align-items: center;
+  font-family: var(--mono); font-size: 11px;
+  color: var(--bone-dim); letter-spacing: 0.06em;
+  flex-wrap: wrap;
+}
+.planet-sub .chip {
+  padding: 3px 8px; border: 1px solid var(--hairline);
+  color: var(--bone); text-transform: uppercase; letter-spacing: 0.18em;
+  font-size: 9.5px;
+}
+.planet-sub .chip.tellurique { color: #3a5a22; border-color: #6a8a3a; background: rgba(106,138,58,0.08); }
+.planet-sub .chip.cristalline { color: #1a5a5a; border-color: #4a8a8a; background: rgba(74,138,138,0.08); }
+.planet-sub .chip.glacee { color: #1a4a6a; border-color: #4a7a9a; background: rgba(74,122,154,0.08); }
+.planet-sub .chip.volcanique { color: #8a2818; border-color: #b8503a; background: rgba(184,80,58,0.08); }
+.planet-sub .chip.gazeuse { color: #4a2a6a; border-color: #7a5a9a; background: rgba(122,90,154,0.08); }
+.planet-sub .fields {
+  display: flex; align-items: center; gap: 8px; margin-left: auto;
+}
+.planet-sub .fields b {
+  font-weight: 400; color: var(--bone-2);
+  font-family: var(--display); font-size: 13px;
+}
+
+/* section heading */
+h2.sect {
+  margin: 26px 0 16px;
+  font-family: var(--serif); font-style: italic; font-weight: 500;
+  font-size: 20px; color: var(--bone-2);
+  display: flex; align-items: center; gap: 14px;
+}
+h2.sect::before {
+  content: ""; width: 18px; height: 1px; background: var(--brass);
+}
+h2.sect::after {
+  content: ""; flex: 1; height: 1px;
+  background: linear-gradient(90deg, var(--hairline), transparent);
+}
+h2.sect .num {
+  font-family: var(--mono); font-style: normal;
+  font-size: 10px; letter-spacing: 0.2em;
+  color: var(--brass-dim);
+  margin-left: 4px;
+}
+
+/* tab views */
+.view { display: none; }
+.view.on { display: block; animation: fade .3s ease; }
+@keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+/* building grid */
+.bgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1px;
+  background: var(--hairline);
+  border: 1px solid var(--hairline);
+}
+.bcard {
+  background: var(--ink-2);
+  padding: 14px 16px;
+  display: grid;
+  grid-template-columns: 38px 1fr auto;
+  grid-template-rows: auto auto;
+  gap: 4px 14px;
+  position: relative;
+  transition: background .15s;
+}
+.bcard:hover { background: var(--ink-3); }
+.bcard .gl {
+  grid-row: 1 / 3;
+  width: 38px; height: 38px;
+  display: grid; place-items: center;
+  color: var(--brass);
+  border: 1px solid var(--brass-dim);
+}
+.bcard .gl svg { width: 22px; height: 22px; }
+.bcard .nm {
+  font-family: var(--serif); font-style: italic; font-size: 15px;
+  color: var(--bone-2); line-height: 1.1;
+}
+.bcard .nm small {
+  display: block; font-family: var(--mono); font-style: normal;
+  font-size: 9px; color: var(--bone-dim); letter-spacing: 0.18em;
+  text-transform: uppercase; margin-top: 3px;
+}
+.bcard .lvl {
+  font-family: var(--display); font-size: 22px; color: var(--phosphor);
+  line-height: 1; text-align: right;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 0 rgba(255,240,200,0.5);
+}
+.bcard .lvl small {
+  display: block; font-family: var(--mono); font-size: 9px;
+  color: var(--bone-dim); letter-spacing: 0.2em;
+  text-transform: uppercase; margin-top: 2px;
+}
+.bcard.zero .lvl { color: var(--bone-dim); text-shadow: none; }
+.bcard.zero .gl { color: var(--brass-dim); border-color: var(--hairline); }
+.bcard .queue {
+  grid-column: 2 / 4;
+  font-family: var(--mono); font-size: 10.5px;
+  color: var(--brass-2); letter-spacing: 0.05em;
+  display: flex; align-items: center; gap: 8px;
+  padding-top: 4px; border-top: 1px dashed var(--brass-dim);
+  margin-top: 4px;
+}
+.bcard .queue .pulse {
+  width: 6px; height: 6px; background: var(--brass);
+  border-radius: 50%; animation: pulse 1.4s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(200,152,88,0.6); }
+  50% { box-shadow: 0 0 0 6px rgba(200,152,88,0); }
+}
+
+/* simple table for fleet/research/defense */
+.tbl { width: 100%; border-collapse: collapse; }
+.tbl th, .tbl td {
+  text-align: left; padding: 9px 14px;
+  border-bottom: 1px solid var(--hairline);
+  font-family: var(--mono); font-size: 11.5px;
+  letter-spacing: 0.04em;
+}
+.tbl th {
+  font-size: 9px; letter-spacing: 0.28em; text-transform: uppercase;
+  color: var(--bone-dim); font-weight: 400;
+  border-bottom-color: var(--brass-dim);
+}
+.tbl td.nm { font-family: var(--serif); font-style: italic; font-size: 14px; color: var(--bone-2); }
+.tbl td.v { font-family: var(--display); color: var(--phosphor); text-align: right; font-size: 14px; }
+.tbl tr:hover td { background: rgba(18,34,54,0.4); }
+
+.empty-stamp {
+  border: 1px dashed var(--hairline);
+  padding: 28px;
+  text-align: center;
+  font-family: var(--serif); font-style: italic;
+  color: var(--bone-dim); font-size: 15px;
+  letter-spacing: 0.04em;
+}
+
+/* galaxy view */
+.galaxy { display: flex; flex-direction: column; gap: 22px; }
+.system {
+  border: 1px solid var(--hairline);
+  background: var(--ink-2);
+  padding: 14px 18px;
+}
+.system header {
+  display: flex; align-items: baseline; gap: 14px;
+  margin-bottom: 12px; padding-bottom: 10px;
+  border-bottom: 1px solid var(--hairline);
+}
+.system .star-name {
+  font-family: var(--serif); font-style: italic; font-size: 18px;
+  color: var(--bone-2);
+}
+.system .star-meta {
+  font-family: var(--mono); font-size: 10px;
+  color: var(--bone-dim); letter-spacing: 0.18em; text-transform: uppercase;
+}
+.system .coord {
+  margin-left: auto;
+  font-family: var(--display); font-size: 14px; color: var(--brass-2);
+}
+.positions {
+  display: grid;
+  grid-template-columns: repeat(15, 1fr);
+  gap: 4px;
+}
+.pos {
+  aspect-ratio: 1;
+  border: 1px solid var(--hairline);
+  display: grid; place-items: center;
+  position: relative;
+  font-family: var(--mono); font-size: 9px;
+  color: var(--bone-dim);
+  cursor: default;
+  transition: all .15s;
+}
+.pos.empty { background: var(--ink-3); }
+.pos.asteroide { border-style: dashed; border-color: var(--brass-dim); color: var(--brass-dim); }
+.pos.planete { border-color: var(--phosphor-dim); }
+.pos.planete .dot { width: 8px; height: 8px; border-radius: 50%; }
+.pos.planete[data-c="tellurique"]  .dot { background: #7fa570; box-shadow: 0 0 6px rgba(127,165,112,0.6); }
+.pos.planete[data-c="cristalline"] .dot { background: #3a8a8a; box-shadow: 0 0 6px rgba(58,138,138,0.7); }
+.pos.planete[data-c="glacee"]      .dot { background: #88c8e0; box-shadow: 0 0 6px rgba(136,200,224,0.7); }
+.pos.planete[data-c="volcanique"]  .dot { background: var(--rust); box-shadow: 0 0 6px rgba(232,99,58,0.7); }
+.pos.planete[data-c="gazeuse"]     .dot { background: var(--violet); box-shadow: 0 0 6px rgba(154,134,212,0.7); }
+.pos.mine { border-color: var(--brass); background: rgba(200,152,88,0.1); }
+.pos.mine .dot { box-shadow: 0 0 0 2px var(--brass), 0 0 10px var(--brass) !important; }
+.pos .num {
+  position: absolute; top: 2px; left: 4px;
+  font-size: 8px; color: var(--bone-dim);
+  letter-spacing: 0.05em;
+}
+.pos .own {
+  position: absolute; bottom: 2px; left: 4px; right: 4px;
+  font-size: 8px; color: var(--brass-2);
+  text-align: center; letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.pos:hover {
+  border-color: var(--phosphor); background: rgba(200,88,56,0.06);
+  z-index: 5;
+}
+.pos .tip {
+  display: none; position: absolute; bottom: calc(100% + 4px); left: 50%;
+  transform: translateX(-50%);
+  background: var(--ink-3); border: 1px solid var(--brass-dim);
+  padding: 6px 10px; white-space: nowrap;
+  font-family: var(--mono); font-size: 10px;
+  color: var(--bone); letter-spacing: 0.05em;
+  z-index: 10;
+}
+.pos:hover .tip { display: block; }
+
+/* ─── right rail / journal ────────────────────────────────── */
+.rail {
+  grid-area: rail;
+  border-left: 1px solid var(--hairline);
+  background: linear-gradient(180deg, rgba(12,24,40,0.5), rgba(8,17,28,0.3));
+  overflow-y: auto;
+  padding: 18px 18px 24px;
+}
+.rail h3 {
+  margin: 0 0 12px;
+  font-family: var(--serif); font-style: italic; font-weight: 500;
+  font-size: 17px; color: var(--bone-2);
+  display: flex; align-items: center; gap: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--hairline);
+}
+.rail h3::before {
+  content: ""; width: 5px; height: 5px;
+  background: var(--brass); border-radius: 50%;
+  box-shadow: 0 0 6px var(--brass);
+}
+.rail h3 .ct {
+  margin-left: auto;
+  font-family: var(--mono); font-style: normal;
+  font-size: 9px; letter-spacing: 0.22em;
+  color: var(--bone-dim); text-transform: uppercase;
+}
+.rail .group + .group { margin-top: 24px; }
+
+.qitem {
+  border: 1px solid var(--hairline);
+  background: var(--ink-2);
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  position: relative;
+}
+.qitem .top {
+  display: flex; justify-content: space-between; align-items: baseline;
+  gap: 10px;
+}
+.qitem .nm {
+  font-family: var(--serif); font-style: italic; font-size: 14px;
+  color: var(--bone-2); line-height: 1.2;
+}
+.qitem .nm small {
+  display: block; font-family: var(--mono); font-style: normal;
+  font-size: 8.5px; color: var(--bone-dim); letter-spacing: 0.22em;
+  text-transform: uppercase; margin-top: 2px;
+}
+.qitem .tgt {
+  font-family: var(--display); font-size: 16px;
+  color: var(--phosphor); text-shadow: 0 1px 0 rgba(255,240,200,0.5);
+}
+.qitem .tprog {
+  height: 2px; background: var(--ink-4);
+  margin-top: 10px; position: relative; overflow: hidden;
+}
+.qitem .tprog i {
+  position: absolute; left: 0; top: 0; bottom: 0;
+  background: linear-gradient(90deg, var(--brass), var(--brass-2));
+  transition: width 1s ease;
+}
+.qitem .tmeta {
+  display: flex; justify-content: space-between;
+  margin-top: 6px;
+  font-family: var(--mono); font-size: 9.5px;
+  color: var(--bone-dim); letter-spacing: 0.08em;
+}
+.qitem .tmeta b {
+  font-weight: 400; color: var(--brass-2);
+}
+
+.empty-rail {
+  font-family: var(--serif); font-style: italic;
+  color: var(--bone-dim); font-size: 13px;
+  padding: 6px 0; opacity: 0.7;
+}
+
+/* ─── footer ──────────────────────────────────────────────── */
+.foot {
+  grid-area: foot;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 22px;
+  border-top: 1px solid var(--hairline);
+  background: var(--ink-2);
+  font-family: var(--mono); font-size: 10px;
+  color: var(--bone-dim); letter-spacing: 0.12em;
+}
+.foot .live {
+  display: flex; align-items: center; gap: 8px;
+  color: var(--green);
+}
+.foot .live i {
+  width: 6px; height: 6px; background: var(--green); border-radius: 50%;
+  box-shadow: 0 0 8px var(--green);
+  animation: blink 2s ease-in-out infinite;
+}
+@keyframes blink { 0%,100%{ opacity:1; } 50%{ opacity:0.4; } }
+.foot .seg { display: flex; gap: 18px; align-items: center; }
+.foot .seg span b { color: var(--bone); font-weight: 400; }
+
+/* scrollbars */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--ink); }
+::-webkit-scrollbar-thumb { background: var(--ink-4); }
+::-webkit-scrollbar-thumb:hover { background: var(--brass-dim); }
+
+/* error banner */
+.err {
+  position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
+  background: var(--ink-3); border: 1px solid var(--rust);
+  padding: 8px 18px; z-index: 99;
+  font-family: var(--mono); font-size: 11px;
+  color: var(--rust); letter-spacing: 0.1em;
+  display: none;
+}
+.err.on { display: block; }
+
+/* ─── improve button on bcard ─────────────────────────────── */
+.bcard .upg {
+  grid-column: 2 / 4;
+  display: flex; align-items: center; gap: 10px;
+  padding-top: 8px; border-top: 1px dashed var(--brass-dim);
+  margin-top: 4px;
+  font-family: var(--mono); font-size: 10.5px;
+  color: var(--bone-dim); letter-spacing: 0.04em;
+}
+.bcard .upg .cost { display: flex; gap: 8px; }
+.bcard .upg .cost b { color: var(--bone); font-weight: 500; font-family: var(--display); font-size: 13px; }
+.bcard .upg .cost b.bad { color: var(--rust); }
+.bcard .upg .dur { color: var(--brass-2); margin-left: auto; font-family: var(--display); font-size: 12px; }
+.bcard .upg button {
+  appearance: none; background: var(--brass); color: var(--ink);
+  border: 1px solid var(--brass-2); padding: 5px 12px;
+  font-family: var(--serif); font-style: italic; font-weight: 600;
+  font-size: 13px; letter-spacing: 0.02em;
+  cursor: pointer; transition: all .12s;
+}
+.bcard .upg button:hover { background: var(--brass-2); color: #1a0c02; }
+.bcard .upg button:disabled {
+  background: transparent; color: var(--bone-dim);
+  border-color: var(--hairline); cursor: not-allowed;
+}
+
+/* ─── settings modal ──────────────────────────────────────── */
+.modal-bg {
+  position: fixed; inset: 0; z-index: 80;
+  background: rgba(26,12,2,0.55);
+  backdrop-filter: blur(2px);
+  display: none; align-items: center; justify-content: center;
+}
+.modal-bg.on { display: flex; }
+.modal {
+  width: 540px; max-width: 92vw; max-height: 88vh; overflow: auto;
+  background: var(--ink);
+  border: 1px solid var(--brass);
+  box-shadow: 0 8px 40px rgba(26,12,2,0.5), 0 0 0 4px var(--ink-2);
+  padding: 24px 28px 22px;
+  position: relative;
+}
+.modal::before {
+  content: ""; position: absolute; inset: 6px;
+  border: 1px solid var(--brass-dim); pointer-events: none;
+}
+.modal h2 {
+  margin: 0 0 4px; font-family: var(--serif); font-style: italic;
+  font-weight: 500; font-size: 24px; color: var(--bone-2);
+}
+.modal .lead {
+  margin: 0 0 18px; font-family: var(--serif); font-style: italic;
+  color: var(--bone-dim); font-size: 14px;
+}
+.modal label {
+  display: block; margin-top: 14px;
+  font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.28em;
+  text-transform: uppercase; color: var(--bone-dim); margin-bottom: 4px;
+}
+.modal input, .modal textarea {
+  width: 100%; background: var(--ink-2); color: var(--bone);
+  border: 1px solid var(--hairline); padding: 9px 12px;
+  font-family: var(--mono); font-size: 12px;
+  letter-spacing: 0.02em;
+  resize: vertical;
+}
+.modal input:focus, .modal textarea:focus {
+  outline: 1px solid var(--brass); border-color: var(--brass);
+}
+.modal textarea { min-height: 90px; font-size: 10.5px; line-height: 1.4; }
+.modal .hint {
+  font-family: var(--serif); font-style: italic; font-size: 12px;
+  color: var(--bone-dim); margin-top: 4px; line-height: 1.4;
+}
+.modal .hint a { color: var(--brass-2); }
+.modal .actions {
+  display: flex; gap: 10px; justify-content: flex-end;
+  margin-top: 22px; padding-top: 16px;
+  border-top: 1px solid var(--hairline);
+}
+.modal button {
+  appearance: none; cursor: pointer;
+  font-family: var(--serif); font-style: italic; font-weight: 500;
+  font-size: 14px; letter-spacing: 0.02em;
+  padding: 8px 18px;
+  border: 1px solid var(--brass);
+  background: transparent; color: var(--bone);
+  transition: all .12s;
+}
+.modal button.primary { background: var(--brass); color: var(--ink); }
+.modal button.primary:hover { background: var(--brass-2); }
+.modal button.ghost { border-color: var(--hairline); color: var(--bone-dim); }
+.modal button.ghost:hover { color: var(--bone); border-color: var(--brass-dim); }
+
+/* gear button */
+.gear-btn {
+  appearance: none; background: transparent; border: 1px solid var(--hairline);
+  color: var(--brass); cursor: pointer;
+  width: 32px; height: 32px; display: grid; place-items: center;
+  margin-left: 10px; transition: all .12s;
+}
+.gear-btn:hover { color: var(--brass-2); border-color: var(--brass-dim); }
+.gear-btn svg { width: 16px; height: 16px; }
+
+/* toast */
+.toast {
+  position: fixed; bottom: 60px; right: 22px; z-index: 90;
+  background: var(--ink-2); border: 1px solid var(--brass);
+  border-left: 4px solid var(--brass);
+  padding: 12px 18px; max-width: 380px;
+  font-family: var(--serif); font-size: 14px;
+  color: var(--bone); box-shadow: 0 4px 16px rgba(26,12,2,0.3);
+  display: none; animation: slideIn .25s ease;
+}
+.toast.on { display: block; }
+.toast.err { border-color: var(--rust); border-left-color: var(--rust); color: var(--rust); }
+.toast .title {
+  font-style: italic; font-weight: 500; color: var(--bone-2); margin-bottom: 2px;
+}
+.toast.err .title { color: var(--rust); }
+@keyframes slideIn { from { transform: translateX(20px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* "needs setup" pill */
+.setup-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--mono); font-size: 9.5px;
+  color: var(--rust); letter-spacing: 0.18em; text-transform: uppercase;
+  cursor: pointer;
+}
+.setup-pill::before {
+  content: ""; width: 6px; height: 6px; background: var(--rust); border-radius: 50%;
+  animation: blink 1.6s ease-in-out infinite;
+}
+</style>
+</head>
+<body>
+
+<div class="err" id="err"></div>
+<div class="toast" id="toast"></div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h2>Sceau de l'envoyé</h2>
+    <p class="lead">Tes ordres seront signés dans ce navigateur (Ed25519, Web Crypto) puis poussés dans le repo via l'API GitHub. Ces données restent en local.</p>
+
+    <label>Dépôt GitHub</label>
+    <input id="cfgRepo" placeholder="owner/repo · ex: gabrielwaltio/aetheris-protocol"/>
+    <div class="hint">Le repo qui contient <code>joueurs/&lt;toi&gt;/</code>.</div>
+
+    <label>Branche</label>
+    <input id="cfgBranch" placeholder="main"/>
+
+    <label>Personal Access Token (fine-grained)</label>
+    <input id="cfgPat" type="password" placeholder="github_pat_..."/>
+    <div class="hint">
+      <a href="https://github.com/settings/personal-access-tokens/new" target="_blank">Créer un PAT</a> avec <b>Contents: Read and write</b> sur ce repo. Stocké en localStorage.
+    </div>
+
+    <label>Clé privée Ed25519 (joueurs/&lt;toi&gt;/.key.pem)</label>
+    <textarea id="cfgKey" placeholder="-----BEGIN PRIVATE KEY-----&#10;...&#10;-----END PRIVATE KEY-----" autocomplete="off" spellcheck="false"></textarea>
+    <div class="hint">Colle exactement le contenu du <code>.key.pem</code>. Stocké en localStorage (rappel : pas de protection contre script malveillant).</div>
+
+    <div class="actions">
+      <button class="ghost" id="cfgClear">Effacer</button>
+      <button class="ghost" id="cfgCancel">Fermer</button>
+      <button class="primary" id="cfgSave">Sceller</button>
+    </div>
+  </div>
+</div>
+
+<div class="shell">
+  <!-- HEADER -->
+  <div class="head">
+    <div class="brand">
+      <div class="mark"></div>
+      <div class="name">Aetheris<b>Protocole · canonique</b></div>
+    </div>
+    <div class="head-meta">
+      <div class="tick-block">
+        <div>
+          <div class="label">cycle</div>
+          <div class="value" id="tickValue">—</div>
+        </div>
+        <div class="countdown" id="countdown">prochain · —</div>
+      </div>
+      <div class="player-pick">
+        <div class="who" id="whoLabel">—<small>commandant</small></div>
+        <select id="playerSelect"></select>
+        <button class="gear-btn" id="gearBtn" title="paramètres scellés">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESOURCE STRIP -->
+  <div class="strip" id="strip"></div>
+
+  <!-- NAV -->
+  <nav class="nav" id="nav">
+    <div class="heading">cockpit</div>
+    <button data-view="overview" class="on">
+      <span class="gl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="9"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg></span>
+      Aperçu
+    </button>
+    <button data-view="batiments">
+      <span class="gl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4 21V8l8-5 8 5v13"/><path d="M9 21v-7h6v7"/><path d="M4 13h4M16 13h4"/></svg></span>
+      Bâtiments <span class="ct" id="ctBat">—</span>
+    </button>
+    <button data-view="recherche">
+      <span class="gl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="12" r="2"/><ellipse cx="12" cy="12" rx="10" ry="4"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(120 12 12)"/></svg></span>
+      Recherche <span class="ct" id="ctRec">—</span>
+    </button>
+    <button data-view="flotte">
+      <span class="gl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 2l4 7-4 3-4-3 4-7z"/><path d="M8 12l-4 5 4 2 4-2 4 2 4-2-4-5"/></svg></span>
+      Flotte <span class="ct" id="ctFlt">—</span>
+    </button>
+    <button data-view="defense">
+      <span class="gl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 2L4 6v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V6l-8-4z"/></svg></span>
+      Défenses <span class="ct" id="ctDef">—</span>
+    </button>
+    <button data-view="galaxie">
+      <span class="gl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="12" r="2"/><path d="M3 12c5-9 13-9 18 0M21 12c-5 9-13 9-18 0"/></svg></span>
+      Galaxie
+    </button>
+    <div class="heading" style="margin-top:18px">flux</div>
+    <button data-view="journal">
+      <span class="gl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M5 4h11l3 3v13H5z"/><path d="M9 9h7M9 13h7M9 17h4"/></svg></span>
+      Journal
+    </button>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main" id="main">
+    <div class="planet-head" id="planetHead"></div>
+
+    <div class="view on" data-v="overview" id="vOverview"></div>
+    <div class="view" data-v="batiments" id="vBat"></div>
+    <div class="view" data-v="recherche" id="vRec"></div>
+    <div class="view" data-v="flotte" id="vFlt"></div>
+    <div class="view" data-v="defense" id="vDef"></div>
+    <div class="view" data-v="galaxie" id="vGal"></div>
+    <div class="view" data-v="journal" id="vJou"></div>
+  </main>
+
+  <!-- RIGHT RAIL -->
+  <aside class="rail" id="rail">
+    <div class="group">
+      <h3>Chantier <span class="ct" id="qBatCt">—</span></h3>
+      <div id="qBat"></div>
+    </div>
+    <div class="group">
+      <h3>Recherche <span class="ct" id="qRecCt">—</span></h3>
+      <div id="qRec"></div>
+    </div>
+    <div class="group">
+      <h3>Flottes en vol <span class="ct" id="qFltCt">—</span></h3>
+      <div id="qFlt"></div>
+    </div>
+  </aside>
+
+  <!-- FOOTER -->
+  <div class="foot">
+    <div class="live"><i></i> <span>uplink actif · <span id="lastRefresh">—</span></span></div>
+    <div class="seg">
+      <span>protocole <b id="proto">—</b></span>
+      <span>serveur <b id="srv">—</b></span>
+      <span>seed <b id="seed">—</b></span>
+      <span>hash <b id="hash">—</b></span>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ───────────────────────────── YAML mini parser ─────────────────────────── */
+function yparse(text) {
+  const lines = text.split('\n').filter(l => !/^\s*#/.test(l)).map(l => l.replace(/\s+#.*$/, ''));
+  let i = 0;
+  function readBlock(indent) {
+    const out = {}; let firstKey = true;
+    while (i < lines.length) {
+      const line = lines[i];
+      if (!line.trim()) { i++; continue; }
+      const ind = line.match(/^ */)[0].length;
+      if (ind < indent) return out;
+      if (ind > indent && firstKey) return readBlock(ind);
+      const m = line.slice(ind).match(/^"?([\w:.\-]+)"?\s*:\s*(.*)$/);
+      if (!m) { i++; continue; }
+      const [, k, rest] = m; i++;
+      if (rest === '') {
+        if (i < lines.length && /^\s*-\s/.test(lines[i])) out[k] = readList(ind + 2);
+        else out[k] = readBlock(ind + 2);
+      } else if (rest.startsWith('[') || rest.startsWith('{')) {
+        out[k] = readInline(rest);
+      } else { out[k] = parseScalar(rest); }
+      firstKey = false;
+    }
+    return out;
+  }
+  function readList(indent) {
+    const out = [];
+    while (i < lines.length) {
+      const line = lines[i];
+      if (!line.trim()) { i++; continue; }
+      const ind = line.match(/^ */)[0].length;
+      if (ind < indent) return out;
+      if (!line.slice(ind).startsWith('- ')) return out;
+      const rest = line.slice(ind + 2); i++;
+      if (rest.includes(':') && !rest.startsWith('{')) {
+        const m = rest.match(/^([\w-]+)\s*:\s*(.*)$/);
+        const item = {};
+        if (m && m[2] === '') item[m[1]] = readBlock(ind + 4);
+        else if (m) item[m[1]] = parseScalar(m[2]);
+        Object.assign(item, readBlock(ind + 2));
+        out.push(item);
+      } else if (rest.startsWith('{')) { out.push(readInline(rest)); }
+      else { out.push(parseScalar(rest)); }
+    }
+    return out;
+  }
+  function splitTopLevel(s, sep) {
+    const out = []; let depth = 0, start = 0;
+    for (let j = 0; j < s.length; j++) {
+      const c = s[j];
+      if (c === '{' || c === '[') depth++;
+      else if (c === '}' || c === ']') depth--;
+      else if (c === sep && depth === 0) { out.push(s.slice(start, j).trim()); start = j + 1; }
+    }
+    const last = s.slice(start).trim();
+    if (last) out.push(last);
+    return out;
+  }
+  function readInline(s) {
+    s = s.trim();
+    if (s.startsWith('[') && s.endsWith(']')) {
+      const inner = s.slice(1, -1).trim(); if (!inner) return [];
+      return splitTopLevel(inner, ',').map(t => parseScalar(t));
+    }
+    if (s.startsWith('{') && s.endsWith('}')) {
+      const inner = s.slice(1, -1).trim(); if (!inner) return {};
+      const out = {};
+      for (const part of splitTopLevel(inner, ',')) {
+        const colon = part.indexOf(':'); if (colon < 0) continue;
+        const k = part.slice(0, colon).trim().replace(/^["']|["']$/g, '');
+        out[k] = parseScalar(part.slice(colon + 1).trim());
+      }
+      return out;
+    }
+    return s;
+  }
+  function parseScalar(s) {
+    s = s.trim();
+    if (s === 'true') return true;
+    if (s === 'false') return false;
+    if (s === 'null' || s === '~' || s === '') return null;
+    if (/^-?\d+$/.test(s)) return parseInt(s, 10);
+    if (/^-?\d*\.\d+$/.test(s)) return parseFloat(s);
+    if (/^["'].*["']$/.test(s)) return s.slice(1, -1);
+    if (s.startsWith('[') || s.startsWith('{')) return readInline(s);
+    return s;
+  }
+  return readBlock(0);
+}
+
+/* ───────────────────────────── State ────────────────────────────────────── */
+const state = {
+  manifest: null,
+  galaxie: null,
+  rules: null,
+  players: {},
+  current: localStorage.getItem('aetheris.player') || null,
+  view: localStorage.getItem('aetheris.view') || 'overview',
+  pending: new Set(), // batiments en cours d'upload (anti double-clic)
+};
+
+const cfg = {
+  get repo()   { return localStorage.getItem('aetheris.gh.repo')   || ''; },
+  set repo(v)  { v ? localStorage.setItem('aetheris.gh.repo', v)   : localStorage.removeItem('aetheris.gh.repo'); },
+  get branch() { return localStorage.getItem('aetheris.gh.branch') || 'main'; },
+  set branch(v){ v ? localStorage.setItem('aetheris.gh.branch', v) : localStorage.removeItem('aetheris.gh.branch'); },
+  get pat()    { return localStorage.getItem('aetheris.gh.pat')    || ''; },
+  set pat(v)   { v ? localStorage.setItem('aetheris.gh.pat', v)    : localStorage.removeItem('aetheris.gh.pat'); },
+  get key()    { return localStorage.getItem('aetheris.gh.key')    || ''; },
+  set key(v)   { v ? localStorage.setItem('aetheris.gh.key', v)    : localStorage.removeItem('aetheris.gh.key'); },
+  get ready()  { return !!(this.repo && this.pat && this.key); },
+};
+
+/* ───────────────────────────── Iconography ──────────────────────────────── */
+const icons = {
+  ferrum: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 21l5-5M7 17l-3-3M9 15l5-5M14 10l4 4M14 10l-3-3 4-4 9 9-4 4-3-3"/></svg>`,
+  lumen:  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>`,
+  plasmide:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M9 3h6M10 3v5l-4 11a3 3 0 003 4h6a3 3 0 003-4l-4-11V3"/><path d="M7 14h10"/></svg>`,
+  energie: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z"/></svg>`,
+
+  mine_ferrum: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 21l8-8M11 13l3-3-2-2 5-5 4 4-5 5-2-2-3 3M5 21h6"/></svg>`,
+  extracteur_lumen: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="9" r="3"/><path d="M12 2v2M5 4l1 1M19 4l-1 1M3 9h2M19 9h2M5 14l1-1M19 14l-1-1M6 17l-2 4M18 17l2 4M9 17l-1 4M15 17l1 4M12 17v4"/></svg>`,
+  synthetiseur_plasmide: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M9 3h6M10 3v5l-4 11a3 3 0 003 4h6a3 3 0 003-4l-4-11V3"/><circle cx="12" cy="16" r="1.2"/></svg>`,
+  centrale_solaire: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="6" width="18" height="10" rx="1"/><path d="M3 11h18M9 6v10M15 6v10M8 20h8M12 16v4"/></svg>`,
+  depot: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 12l9 4 9-4M3 17l9 4 9-4"/></svg>`,
+  usine_robotique: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>`,
+  chantier_spatial: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 2c4 4 6 8 6 12v4l-3-2h-6l-3 2v-4c0-4 2-8 6-12z"/><circle cx="12" cy="11" r="2"/><path d="M9 20l-2 2M15 20l2 2"/></svg>`,
+  laboratoire: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="12" r="2"/><ellipse cx="12" cy="12" rx="10" ry="4"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(120 12 12)"/></svg>`,
+
+  default_b: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="4" y="8" width="16" height="13"/><path d="M4 8l8-5 8 5"/></svg>`,
+  default_f: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 2l4 7-4 3-4-3 4-7z"/></svg>`,
+  default_d: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 2L4 6v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V6l-8-4z"/></svg>`,
+};
+
+const labels = {
+  mine_ferrum: 'Mine de Ferrum',
+  extracteur_lumen: 'Extracteur Lumen',
+  synthetiseur_plasmide: 'Synthétiseur Plasmide',
+  centrale_solaire: 'Centrale Solaire',
+  depot: 'Dépôt Stratégique',
+  usine_robotique: 'Usine Robotique',
+  chantier_spatial: 'Chantier Spatial',
+  laboratoire: 'Laboratoire',
+};
+
+const taglines = {
+  mine_ferrum: 'extraction métallurgique',
+  extracteur_lumen: 'récolte photonique',
+  synthetiseur_plasmide: 'synthèse plasmidique',
+  centrale_solaire: 'production énergétique',
+  depot: 'capacité de stockage',
+  usine_robotique: 'cadence de construction',
+  chantier_spatial: 'assemblage de flotte',
+  laboratoire: 'progression scientifique',
+};
+
+/* ───────────────────────────── Planet glyph ─────────────────────────────── */
+function planetSVG(classe) {
+  const palettes = {
+    tellurique:  ['#3a5a3e', '#7fa570', '#a8c89a', '#2a3e2c'],
+    cristalline: ['#2a5a5a', '#6fe6e1', '#a8f5f2', '#1a3a3a'],
+    glacee:      ['#3a6a8a', '#88c8e0', '#d0e8f5', '#1e3a4a'],
+    volcanique:  ['#5a2a1a', '#e8633a', '#f0a070', '#3a1a10'],
+    gazeuse:     ['#4a3a6a', '#9a86d4', '#c8b0d8', '#2a1e3a'],
+  };
+  const p = palettes[classe] || palettes.tellurique;
+  return `<svg viewBox="0 0 64 64">
+    <defs>
+      <radialGradient id="pg-${classe}" cx="35%" cy="30%">
+        <stop offset="0%" stop-color="${p[2]}"/>
+        <stop offset="40%" stop-color="${p[1]}"/>
+        <stop offset="80%" stop-color="${p[0]}"/>
+        <stop offset="100%" stop-color="${p[3]}"/>
+      </radialGradient>
+    </defs>
+    <circle cx="32" cy="32" r="26" fill="url(#pg-${classe})"/>
+    <circle cx="32" cy="32" r="26" fill="none" stroke="${p[3]}" stroke-width="0.6" opacity="0.6"/>
+    <ellipse cx="22" cy="24" rx="6" ry="3" fill="${p[0]}" opacity="0.5"/>
+    <ellipse cx="40" cy="38" rx="8" ry="4" fill="${p[3]}" opacity="0.5"/>
+    <circle cx="44" cy="22" r="2.5" fill="${p[2]}" opacity="0.6"/>
+    <circle cx="32" cy="32" r="26" fill="none" stroke="${p[2]}" stroke-width="0.4" opacity="0.3"/>
+  </svg>`;
+}
+
+/* ───────────────────────────── Fetch ────────────────────────────────────── */
+async function fetchText(p) {
+  const r = await fetch(p, { cache: 'no-cache' });
+  if (!r.ok) throw new Error(p);
+  return r.text();
+}
+
+async function load() {
+  try {
+    state.manifest = yparse(await fetchText('world/manifest.yaml'));
+    if (!state.rules) {
+      try { state.rules = yparse(await fetchText('engine/rules.yaml')); } catch {}
+    }
+    const galaxieText = await fetchText('world/galaxie.yaml');
+    state.galaxie = yparse(galaxieText);
+
+    const owners = new Set();
+    for (const m of galaxieText.matchAll(/proprietaire:\s*([\w-]+)/g)) {
+      if (m[1] !== 'null') owners.add(m[1]);
+    }
+
+    state.players = {};
+    for (const name of owners) {
+      try {
+        state.players[name] = yparse(await fetchText(`joueurs/${name}/empire.yaml`));
+      } catch (e) {}
+    }
+
+    if (!state.current || !state.players[state.current]) {
+      state.current = [...owners][0] || null;
+    }
+    document.getElementById('err').classList.remove('on');
+    render();
+  } catch (e) {
+    const err = document.getElementById('err');
+    err.textContent = '⚠ liaison rompue · ' + (e.message || 'erreur');
+    err.classList.add('on');
+  }
+}
+
+/* ───────────────────────────── Format helpers ───────────────────────────── */
+const fmt = n => (n ?? 0).toLocaleString('fr-FR');
+const fmtCompact = n => {
+  n = n ?? 0;
+  if (n >= 1e9) return (n/1e9).toFixed(1).replace(/\.0$/, '') + 'G';
+  if (n >= 1e6) return (n/1e6).toFixed(1).replace(/\.0$/, '') + 'M';
+  if (n >= 1e3) return (n/1e3).toFixed(1).replace(/\.0$/, '') + 'k';
+  return String(n);
+};
+
+// 1 UTJ ≈ duree_tick_min / 6 (6 UTJ par tick par convention engine)
+function utjMin() { return ((state.manifest?.duree_tick_min) || 15) / 6; }
+
+function nextTickInfo() {
+  const m = state.manifest; if (!m) return { tick: 0, secs: 0, pct: 0, mins: 15 };
+  const start = new Date(m.demarrage_iso).getTime();
+  const dur = (m.duree_tick_min || 15) * 60 * 1000;
+  const next = start + (m.tick + 1) * dur;
+  const now = Date.now();
+  const secs = Math.max(0, Math.round((next - now) / 1000));
+  const pct = Math.min(100, Math.max(0, ((now - (next - dur)) / dur) * 100));
+  return { tick: m.tick, secs, pct, mins: m.duree_tick_min };
+}
+
+function fmtCountdown(s) {
+  const m = Math.floor(s / 60), sec = s % 60;
+  return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+}
+
+/* ───────────────────────────── Render ───────────────────────────────────── */
+function render() {
+  const m = state.manifest;
+
+  // header
+  document.getElementById('tickValue').textContent = m ? String(m.tick).padStart(3, '0') : '—';
+  document.getElementById('proto').textContent = m ? `v${m.protocol_version}` : '—';
+  document.getElementById('srv').textContent = m ? m.serveur : '—';
+  document.getElementById('seed').textContent = m ? String(m.seed).slice(0, 10) + '…' : '—';
+  document.getElementById('hash').textContent = m && m.hash_etat ? String(m.hash_etat).slice(7, 19) : '—';
+  document.getElementById('whoLabel').innerHTML = state.current
+    ? `${state.current}<small>commandant</small>`
+    : `vacant<small>commandant</small>`;
+
+  // player select
+  const sel = document.getElementById('playerSelect');
+  const names = Object.keys(state.players);
+  sel.innerHTML = names.map(n => `<option value="${n}"${n === state.current ? ' selected' : ''}>${n}</option>`).join('') || '<option>—</option>';
+  sel.onchange = e => {
+    state.current = e.target.value;
+    localStorage.setItem('aetheris.player', state.current);
+    render();
+  };
+
+  const emp = state.players[state.current];
+  const p = emp && (emp.planetes || [])[0];
+
+  renderResourceStrip(p);
+  renderPlanetHead(p, emp);
+  renderOverview(p, emp);
+  renderBatiments(p);
+  renderRecherche(emp);
+  renderFlotte(p);
+  renderDefense(p);
+  renderGalaxie();
+  renderJournal(p, emp);
+  renderRail(p, emp);
+  renderNavCounts(p, emp);
+  applyView();
+
+  document.getElementById('lastRefresh').textContent =
+    new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function renderNavCounts(p, emp) {
+  const numActive = (obj) => obj ? Object.values(obj).filter(v => v && v > 0).length : 0;
+  document.getElementById('ctBat').textContent = p ? numActive(p.batiments) : '—';
+  document.getElementById('ctRec').textContent = emp ? numActive(emp.recherche) : '—';
+  document.getElementById('ctFlt').textContent = p ? numActive(p.flotte_au_sol) : '—';
+  document.getElementById('ctDef').textContent = p ? numActive(p.defenses) : '—';
+}
+
+function renderResourceStrip(p) {
+  const def = [
+    { k: 'ferrum',   l: 'Ferrum',   sub: 'mineralia' },
+    { k: 'lumen',    l: 'Lumen',    sub: 'photonica' },
+    { k: 'plasmide', l: 'Plasmide', sub: 'biomatter' },
+  ];
+  let html = '';
+  for (const r of def) {
+    const info = p?.ressources?.[r.k] || { stock: 0, production_par_utj: 0, capacite: 0 };
+    const pct = info.capacite ? Math.min(100, (info.stock / info.capacite) * 100) : 0;
+    const warn = pct >= 90;
+    const prod = info.production_par_utj || 0;
+    html += `<div class="res" data-r="${r.k}">
+      <div class="ico">${icons[r.k]}</div>
+      <div class="nm">${r.l}<small>${r.sub}</small></div>
+      <div class="stock">${fmtCompact(info.stock)}</div>
+      <div class="bar"><i class="${warn?'warn':''}" style="width:${pct}%"></i></div>
+      <div class="meta">
+        <span class="prod ${prod===0?'zero':''}">${prod>0?'+':''}${prod}/utj</span>
+        <span>${fmtCompact(info.stock)} / ${fmtCompact(info.capacite)}</span>
+      </div>
+    </div>`;
+  }
+  // énergie
+  const en = p?.energie || { production: 0, consommation: 0 };
+  const balance = (en.production || 0) - (en.consommation || 0);
+  const enPct = en.production ? Math.min(100, (en.consommation / en.production) * 100) : 0;
+  html += `<div class="res" data-r="energie">
+    <div class="ico">${icons.energie}</div>
+    <div class="nm">Énergie<small>quanta</small></div>
+    <div class="stock" style="color:${balance < 0 ? 'var(--rust)' : 'var(--phosphor)'}">${balance >= 0 ? '+' : ''}${balance}</div>
+    <div class="bar"><i class="${enPct >= 95 ? 'warn' : ''}" style="width:${enPct}%"></i></div>
+    <div class="meta">
+      <span class="prod">${en.production || 0} prod</span>
+      <span>${en.consommation || 0} cons</span>
+    </div>
+  </div>`;
+  document.getElementById('strip').innerHTML = html;
+}
+
+function renderPlanetHead(p, emp) {
+  const head = document.getElementById('planetHead');
+  if (!p) {
+    head.innerHTML = `<div style="grid-column:1/-1" class="empty-stamp">aucune planète attribuée</div>`;
+    return;
+  }
+  const coord = (p.coordonnees || []).join(':');
+  const champs = `${p.champs?.utilises ?? 0}/${p.champs?.total ?? 0}`;
+  head.innerHTML = `
+    <div class="planet-glyph">${planetSVG(p.type || 'tellurique')}</div>
+    <div>
+      <h1 class="planet-title"><span class="em">${coord}</span>${p.nom}</h1>
+      <div class="planet-sub">
+        <span class="chip ${p.type}">${p.type}</span>
+        <span>rang <b style="color:var(--bone-2);font-family:var(--display)">#${emp?.rang ?? '?'}</b></span>
+        <span>score <b style="color:var(--bone-2);font-family:var(--display)">${fmt(emp?.score_total ?? 0)}</b></span>
+        <span>militaire <b style="color:var(--bone-2);font-family:var(--display)">${fmt(emp?.points_militaires ?? 0)}</b></span>
+        <span class="fields"><b>${champs}</b> champs occupés</span>
+      </div>
+    </div>`;
+}
+
+function renderOverview(p, emp) {
+  const v = document.getElementById('vOverview');
+  if (!p) { v.innerHTML = `<div class="empty-stamp">en attente d'attribution</div>`; return; }
+
+  const buildings = Object.entries(p.batiments || {});
+  const built = buildings.filter(([,n]) => n > 0).length;
+  const total = buildings.length;
+
+  const queueItems = (p.file_chantier || []).length;
+  const research = Object.values(emp?.recherche || {}).filter(v => v > 0).length;
+  const fleet = Object.values(p.flotte_au_sol || {}).reduce((a, b) => a + (b||0), 0);
+  const def = Object.values(p.defenses || {}).reduce((a, b) => a + (b||0), 0);
+
+  v.innerHTML = `
+    <h2 class="sect">Synopsis <span class="num">§ I</span></h2>
+    <div class="bgrid">
+      ${overviewCard('Infrastructure', `${built}/${total}`, 'bâtiments actifs', icons.usine_robotique)}
+      ${overviewCard('File active', `${queueItems}`, 'ouvrage en cours', icons.chantier_spatial)}
+      ${overviewCard('Sciences', `${research}`, 'disciplines avancées', icons.laboratoire)}
+      ${overviewCard('Flotte', `${fleet}`, 'unités au sol', icons.default_f)}
+      ${overviewCard('Défense', `${def}`, 'pièces déployées', icons.default_d)}
+      ${overviewCard('Champs libres', `${(p.champs?.total||0) - (p.champs?.utilises||0)}`, 'parcelles vacantes', icons.depot)}
+    </div>
+
+    <h2 class="sect">Bâtiments principaux <span class="num">§ II</span></h2>
+    ${renderBatGrid(p, 4)}
+  `;
+}
+function overviewCard(label, val, sub, ico) {
+  return `<div class="bcard ${val === '0' ? 'zero' : ''}">
+    <div class="gl">${ico}</div>
+    <div class="nm">${label}<small>${sub}</small></div>
+    <div class="lvl">${val}<small>actuel</small></div>
+  </div>`;
+}
+
+function renderBatGrid(p, max) {
+  const all = Object.entries(p.batiments || {});
+  const queueMap = {};
+  for (const c of (p.file_chantier || [])) queueMap[c.batiment] = c;
+  const list = max ? all.slice(0, max) : all;
+  if (list.length === 0) return `<div class="empty-stamp">néant</div>`;
+
+  const ICOS = { ferrum: 'Fe', lumen: 'Lu', plasmide: 'Pl' };
+  return `<div class="bgrid">${list.map(([k, lvl]) => {
+    const q = queueMap[k];
+    const ico = icons[k] || icons.default_b;
+    let footer = '';
+    if (q) {
+      const remain = Math.max(0, q.fin_utj || 0);
+      const mins = Math.round(remain * utjMin());
+      footer = `<div class="queue"><span class="pulse"></span>
+        ouvrage · niv ${q.niveau_cible} · <b style="color:var(--phosphor)">${remain} UTJ</b> <span style="color:var(--bone-dim)">≈ ${mins} min</span></div>`;
+    } else if (state.rules && batDef(k)) {
+      const cost = nextCost(k, lvl);
+      const dur = nextDureeUtj(k, lvl);
+      const mins = Math.round((dur || 0) * utjMin());
+      const afford = canAfford(p, cost);
+      const pending = state.pending.has(k);
+      const costHtml = Object.entries(cost || {}).map(([res, v]) => {
+        const stock = p.ressources?.[res]?.stock || 0;
+        const bad = stock < v ? ' bad' : '';
+        return `<span><b class="${bad}">${fmtCompact(v)}</b> ${ICOS[res] || res}</span>`;
+      }).join(' ');
+      footer = `<div class="upg">
+        <div class="cost">${costHtml}</div>
+        <span class="dur">${dur} UTJ · ${mins}m</span>
+        <button data-improve="${k}" ${(!afford || pending) ? 'disabled' : ''}>${pending ? '…' : 'Améliorer'}</button>
+      </div>`;
+    }
+    return `<div class="bcard ${lvl === 0 && !q ? 'zero' : ''}">
+      <div class="gl">${ico}</div>
+      <div class="nm">${labels[k] || k}<small>${taglines[k] || 'structure'}</small></div>
+      <div class="lvl">${lvl}<small>niveau</small></div>
+      ${footer}
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function renderBatiments(p) {
+  const v = document.getElementById('vBat');
+  if (!p) { v.innerHTML = `<div class="empty-stamp">néant</div>`; return; }
+  v.innerHTML = `<h2 class="sect">Édifices planétaires <span class="num">§ B</span></h2>${renderBatGrid(p)}`;
+}
+
+function renderRecherche(emp) {
+  const v = document.getElementById('vRec');
+  const r = emp?.recherche || {};
+  const queue = emp?.file_recherche || [];
+  if (Object.keys(r).length === 0 && queue.length === 0) {
+    v.innerHTML = `<h2 class="sect">Sciences <span class="num">§ R</span></h2><div class="empty-stamp">aucun champ d'étude entamé</div>`;
+    return;
+  }
+  let body = '';
+  if (Object.keys(r).length > 0) {
+    body += `<table class="tbl"><thead><tr><th>discipline</th><th style="text-align:right">niveau</th></tr></thead><tbody>`;
+    body += Object.entries(r).map(([k, lv]) => `<tr><td class="nm">${k}</td><td class="v">${lv}</td></tr>`).join('');
+    body += `</tbody></table>`;
+  }
+  v.innerHTML = `<h2 class="sect">Sciences <span class="num">§ R</span></h2>${body || '<div class="empty-stamp">néant</div>'}`;
+}
+
+function renderFlotte(p) {
+  const v = document.getElementById('vFlt');
+  const f = p?.flotte_au_sol || {};
+  if (Object.keys(f).length === 0) {
+    v.innerHTML = `<h2 class="sect">Flotte au sol <span class="num">§ F</span></h2><div class="empty-stamp">silos vides</div>`;
+    return;
+  }
+  let body = `<table class="tbl"><thead><tr><th>vaisseau</th><th style="text-align:right">unités</th></tr></thead><tbody>`;
+  body += Object.entries(f).map(([k, n]) => `<tr><td class="nm">${k}</td><td class="v">${fmt(n)}</td></tr>`).join('');
+  body += `</tbody></table>`;
+  v.innerHTML = `<h2 class="sect">Flotte au sol <span class="num">§ F</span></h2>${body}`;
+}
+
+function renderDefense(p) {
+  const v = document.getElementById('vDef');
+  const d = p?.defenses || {};
+  if (Object.keys(d).length === 0) {
+    v.innerHTML = `<h2 class="sect">Défenses <span class="num">§ D</span></h2><div class="empty-stamp">périmètre indéfendu</div>`;
+    return;
+  }
+  let body = `<table class="tbl"><thead><tr><th>pièce</th><th style="text-align:right">déployées</th></tr></thead><tbody>`;
+  body += Object.entries(d).map(([k, n]) => `<tr><td class="nm">${k}</td><td class="v">${fmt(n)}</td></tr>`).join('');
+  body += `</tbody></table>`;
+  v.innerHTML = `<h2 class="sect">Défenses <span class="num">§ D</span></h2>${body}`;
+}
+
+function renderGalaxie() {
+  const v = document.getElementById('vGal');
+  const g = state.galaxie;
+  if (!g || !g.systemes) { v.innerHTML = `<h2 class="sect">Galaxie</h2><div class="empty-stamp">cartographie indisponible</div>`; return; }
+  const myPlanet = state.players[state.current]?.planetes?.[0];
+  const myCoord = myPlanet?.coordonnees ? myPlanet.coordonnees.join(':') : null;
+
+  let html = `<h2 class="sect">Cartographie galactique <span class="num">§ G</span></h2><div class="galaxy">`;
+  for (const [coord, sys] of Object.entries(g.systemes)) {
+    const star = sys.etoile || {};
+    html += `<div class="system"><header>
+      <span class="star-name">${star.nom || '—'}</span>
+      <span class="star-meta">type ${star.type || '?'} · ${star.temperature_k || '?'}K</span>
+      <span class="coord">${coord}</span>
+    </header><div class="positions">`;
+    for (let i = 1; i <= 15; i++) {
+      const pos = sys.positions?.[i] || { type: 'empty' };
+      const t = pos.type;
+      const cls = pos.classe;
+      const owner = pos.proprietaire;
+      const fullCoord = `${coord}:${i}`;
+      const isMine = fullCoord === myCoord;
+      let dot = '';
+      let kind = t;
+      if (t === 'planete') {
+        dot = `<span class="dot"></span>`;
+      }
+      let tip = '';
+      if (t === 'planete') {
+        tip = `${pos.nom || 'planète'} · ${cls || '?'}${owner ? ' · ' + owner : ' · libre'}`;
+      } else if (t === 'asteroide') {
+        tip = `astéroïde`;
+      } else { tip = `vide`; }
+      html += `<div class="pos ${kind} ${isMine?'mine':''}" data-c="${cls||''}">
+        <span class="num">${i}</span>${dot}
+        ${owner ? `<span class="own">${owner.slice(0,5)}</span>` : ''}
+        <span class="tip">${tip}</span>
+      </div>`;
+    }
+    html += `</div></div>`;
+  }
+  html += `</div>`;
+  v.innerHTML = html;
+}
+
+function renderJournal(p, emp) {
+  const v = document.getElementById('vJou');
+  const m = state.manifest;
+  const lines = [];
+  lines.push({ tick: m?.tick ?? 0, txt: 'lecture du protocole', tone: 'phos' });
+  if (p?.file_chantier?.length) {
+    for (const c of p.file_chantier) {
+      lines.push({ tick: m.tick, txt: `chantier · ${labels[c.batiment] || c.batiment} → niv ${c.niveau_cible} (${Math.max(0, c.fin_utj || 0)} UTJ restants)`, tone: 'brass' });
+    }
+  }
+  if (emp?.flottes_en_vol?.length) {
+    for (const f of emp.flottes_en_vol) {
+      lines.push({ tick: m.tick, txt: `${f.type_mission} · ${f.depuis?.planete} → ${f.vers?.planete || f.vers}`, tone: 'rust' });
+    }
+  }
+  v.innerHTML = `<h2 class="sect">Journal de bord <span class="num">§ J</span></h2>
+    <div style="font-family:var(--mono);font-size:12px;line-height:2.1">
+    ${lines.map(l => `<div style="display:flex;gap:18px;border-bottom:1px dashed var(--hairline);padding:6px 0">
+      <span style="color:var(--brass-dim);font-family:var(--display);min-width:60px">T${String(l.tick).padStart(3,'0')}</span>
+      <span style="color:${l.tone==='phos'?'var(--phosphor)':l.tone==='rust'?'var(--rust)':'var(--bone)'}">${l.txt}</span>
+    </div>`).join('')}
+    </div>`;
+}
+
+function renderRail(p, emp) {
+  // Chantier
+  const queue = p?.file_chantier || [];
+  document.getElementById('qBatCt').textContent = queue.length || '—';
+  document.getElementById('qBat').innerHTML = queue.length === 0
+    ? `<div class="empty-rail">aucun ouvrage</div>`
+    : queue.map(c => {
+        const remain = Math.max(0, c.fin_utj || 0);
+        const mins = Math.round(remain * utjMin());
+        return `<div class="qitem">
+          <div class="top">
+            <div class="nm">${labels[c.batiment] || c.batiment}<small>niveau ${c.niveau_cible}</small></div>
+            <div class="tgt">${remain}<small style="font-family:var(--mono);font-size:9px;letter-spacing:0.18em;color:var(--bone-dim);display:block;margin-top:2px;text-align:right">UTJ</small></div>
+          </div>
+          <div class="tmeta"><span>≈ <b>${mins}</b> min restantes</span><span>${remain <= 6 ? 'achève au prochain tick' : Math.ceil(remain/6) + ' ticks'}</span></div>
+        </div>`;
+      }).join('');
+
+  // Recherche
+  const rq = emp?.file_recherche || [];
+  document.getElementById('qRecCt').textContent = rq.length || '—';
+  document.getElementById('qRec').innerHTML = rq.length === 0
+    ? `<div class="empty-rail">cabinets vides</div>`
+    : rq.map(r => {
+        const remain = Math.max(0, r.fin_utj || 0);
+        return `<div class="qitem">
+          <div class="top">
+            <div class="nm">${r.recherche || r.discipline || '?'}<small>niv ${r.niveau_cible || '?'}</small></div>
+            <div class="tgt">${remain}<small style="font-family:var(--mono);font-size:9px;letter-spacing:0.18em;color:var(--bone-dim);display:block;margin-top:2px;text-align:right">UTJ</small></div>
+          </div>
+        </div>`;
+      }).join('');
+
+  // Flottes
+  const f = emp?.flottes_en_vol || [];
+  document.getElementById('qFltCt').textContent = f.length || '—';
+  document.getElementById('qFlt').innerHTML = f.length === 0
+    ? `<div class="empty-rail">aucune sortie</div>`
+    : f.map(x => {
+        const remain = Math.max(0, (x.arrivee_utj || 0));
+        return `<div class="qitem">
+          <div class="top">
+            <div class="nm">${x.type_mission || 'mission'}<small>${(x.depuis?.planete||'?')} → ${(x.vers?.planete||x.vers||'?')}</small></div>
+            <div class="tgt">${remain}<small style="font-family:var(--mono);font-size:9px;letter-spacing:0.18em;color:var(--bone-dim);display:block;margin-top:2px;text-align:right">UTJ</small></div>
+          </div>
+        </div>`;
+      }).join('');
+}
+
+/* ───────────────────────────── View switching ───────────────────────────── */
+function applyView() {
+  document.querySelectorAll('.nav button').forEach(b => {
+    b.classList.toggle('on', b.dataset.view === state.view);
+  });
+  document.querySelectorAll('.view').forEach(v => {
+    v.classList.toggle('on', v.dataset.v === state.view);
+  });
+}
+document.getElementById('nav').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-view]'); if (!btn) return;
+  state.view = btn.dataset.view;
+  localStorage.setItem('aetheris.view', state.view);
+  applyView();
+});
+
+document.getElementById('main').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-improve]'); if (!btn) return;
+  submitImprove(btn.dataset.improve);
+});
+
+/* ───────────────────────────── Tick countdown ───────────────────────────── */
+function tickCountdown() {
+  const info = nextTickInfo();
+  document.getElementById('countdown').textContent = `prochain · ${fmtCountdown(info.secs)}`;
+}
+setInterval(tickCountdown, 1000);
+
+/* ───────────────────────────── Cost / duration ──────────────────────────── */
+function batDef(b) { return state.rules?.batiments?.[b]; }
+
+function nextCost(batiment, niveauActuel) {
+  const def = batDef(batiment); if (!def) return null;
+  const mult = Math.pow(def.multiplicateur_cout || 1.5, niveauActuel);
+  const out = {};
+  for (const [k, v] of Object.entries(def.cout_base || {})) out[k] = Math.floor(v * mult);
+  return out;
+}
+function nextDureeUtj(batiment, niveauActuel) {
+  const def = batDef(batiment); if (!def) return null;
+  return Math.ceil((def.duree_base_utj || 1) * Math.pow(def.multiplicateur_duree || 1.5, niveauActuel));
+}
+function canAfford(planete, cost) {
+  if (!cost) return false;
+  for (const [k, v] of Object.entries(cost)) {
+    if ((planete?.ressources?.[k]?.stock || 0) < v) return false;
+  }
+  return true;
+}
+
+/* ───────────────────────────── Signature & GitHub commit ────────────────── */
+function pemToBytes(pem) {
+  const b64 = pem.replace(/-----[^-]+-----/g, '').replace(/\s+/g, '');
+  const bin = atob(b64);
+  const arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return arr;
+}
+async function importPrivKey(pem) {
+  const bytes = pemToBytes(pem);
+  return await crypto.subtle.importKey('pkcs8', bytes, { name: 'Ed25519' }, false, ['sign']);
+}
+async function signCanonical(canonical, pem) {
+  const key = await importPrivKey(pem);
+  const sig = await crypto.subtle.sign('Ed25519', key, new TextEncoder().encode(canonical));
+  let bin = '';
+  const u = new Uint8Array(sig);
+  for (let i = 0; i < u.byteLength; i++) bin += String.fromCharCode(u[i]);
+  return btoa(bin);
+}
+
+function buildOrdresYaml({ joueur, tickCible, planete, batiment, niveauCible, nonce }) {
+  return `# Généré depuis la console (${new Date().toISOString()})
+version: 1
+joueur: ${joueur}
+tick_cible: ${tickCible}
+nonce: ${nonce}
+
+ordres:
+  - type: chantier
+    planete: ${planete}
+    batiment: ${batiment}
+    niveau_cible: ${niveauCible}
+`;
+}
+
+async function ghFetch(path, init = {}) {
+  const headers = {
+    Authorization: `Bearer ${cfg.pat}`,
+    Accept: 'application/vnd.github+json',
+    'X-GitHub-Api-Version': '2022-11-28',
+    ...(init.headers || {}),
+  };
+  const r = await fetch(`https://api.github.com${path}`, { ...init, headers });
+  if (!r.ok) {
+    const txt = await r.text();
+    let msg = `${r.status} ${r.statusText}`;
+    try { msg = JSON.parse(txt).message || msg; } catch {}
+    throw new Error(msg);
+  }
+  return r.json();
+}
+
+async function getOrdresFile(joueur) {
+  const path = `joueurs/${joueur}/ordres.yaml`;
+  try {
+    const j = await ghFetch(`/repos/${cfg.repo}/contents/${encodeURIComponent(path).replace(/%2F/g, '/')}?ref=${encodeURIComponent(cfg.branch)}`);
+    return { sha: j.sha, content: atob(j.content.replace(/\s/g, '')) };
+  } catch (e) {
+    if (/Not Found/i.test(e.message)) return { sha: null, content: '' };
+    throw e;
+  }
+}
+
+async function putOrdresFile(joueur, content, sha, message) {
+  const path = `joueurs/${joueur}/ordres.yaml`;
+  // base64 encode UTF-8 safe
+  const utf8 = new TextEncoder().encode(content);
+  let bin = '';
+  for (let i = 0; i < utf8.byteLength; i++) bin += String.fromCharCode(utf8[i]);
+  const b64 = btoa(bin);
+  return await ghFetch(`/repos/${cfg.repo}/contents/${encodeURIComponent(path).replace(/%2F/g, '/')}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, branch: cfg.branch, content: b64, ...(sha ? { sha } : {}) }),
+  });
+}
+
+function randomNonce() {
+  const a = new Uint8Array(3); crypto.getRandomValues(a);
+  return [...a].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function submitImprove(batiment) {
+  if (state.pending.has(batiment)) return;
+  if (!cfg.ready) { openSettings(); toast('Paramètres requis', 'Renseigne PAT, repo et clé pour signer un ordre.', true); return; }
+
+  const emp = state.players[state.current];
+  const planete = emp?.planetes?.[0]; if (!planete) return;
+  const niveauActuel = planete.batiments?.[batiment] || 0;
+  const niveauCible = niveauActuel + 1;
+  const cost = nextCost(batiment, niveauActuel);
+  if (!canAfford(planete, cost)) { toast('Ressources insuffisantes', `${batiment} niv ${niveauCible} requiert plus que tes stocks.`, true); return; }
+
+  const tickCible = (state.manifest?.tick ?? 0) + 1;
+  const nonce = randomNonce();
+
+  state.pending.add(batiment); render();
+  try {
+    // 1. Build canonical body (sans signature, trimEnd + \n unique — match sign.mjs)
+    const body = buildOrdresYaml({ joueur: state.current, tickCible, planete: planete.nom, batiment, niveauCible, nonce });
+    const canonical = body.replace(/\s+$/, '') + '\n';
+
+    // 2. Sign
+    const sig = await signCanonical(canonical, cfg.key);
+    const finalContent = canonical + `signature: ed25519:${sig}\n`;
+
+    // 3. Get current SHA (might not exist)
+    const { sha } = await getOrdresFile(state.current);
+
+    // 4. PUT
+    await putOrdresFile(
+      state.current,
+      finalContent,
+      sha,
+      `${state.current}: chantier ${batiment} → niv ${niveauCible} (tick ${tickCible})`
+    );
+
+    toast('Ordre scellé', `${labels[batiment] || batiment} → niveau ${niveauCible}. Le moteur le traitera au tick ${tickCible}.`);
+  } catch (e) {
+    toast('Échec', e.message || String(e), true);
+  } finally {
+    state.pending.delete(batiment); render();
+  }
+}
+
+/* ───────────────────────────── Settings modal ───────────────────────────── */
+function openSettings() {
+  document.getElementById('cfgRepo').value = cfg.repo;
+  document.getElementById('cfgBranch').value = cfg.branch;
+  document.getElementById('cfgPat').value = cfg.pat;
+  document.getElementById('cfgKey').value = cfg.key;
+  document.getElementById('modalBg').classList.add('on');
+}
+function closeSettings() { document.getElementById('modalBg').classList.remove('on'); }
+document.getElementById('gearBtn').onclick = openSettings;
+document.getElementById('cfgCancel').onclick = closeSettings;
+document.getElementById('modalBg').onclick = e => { if (e.target.id === 'modalBg') closeSettings(); };
+document.getElementById('cfgSave').onclick = () => {
+  cfg.repo   = document.getElementById('cfgRepo').value.trim();
+  cfg.branch = document.getElementById('cfgBranch').value.trim() || 'main';
+  cfg.pat    = document.getElementById('cfgPat').value.trim();
+  cfg.key    = document.getElementById('cfgKey').value.trim();
+  closeSettings();
+  toast('Sceau apposé', cfg.ready ? 'Tu peux maintenant donner des ordres depuis la console.' : 'Champs incomplets — renseigne les 4 pour activer.');
+  render();
+};
+document.getElementById('cfgClear').onclick = () => {
+  if (!confirm('Effacer PAT, clé et repo de ce navigateur ?')) return;
+  cfg.repo = ''; cfg.branch = ''; cfg.pat = ''; cfg.key = '';
+  openSettings();
+};
+
+/* ───────────────────────────── Toast ────────────────────────────────────── */
+let toastTimer = null;
+function toast(title, msg, isErr) {
+  const t = document.getElementById('toast');
+  t.className = 'toast on' + (isErr ? ' err' : '');
+  t.innerHTML = `<div class="title">${title}</div><div>${msg}</div>`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('on'), 6000);
+}
+
+/* boot */
+load();
+setInterval(load, 5000);
+tickCountdown();
+</script>
+</body>
+</html>

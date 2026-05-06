@@ -1,0 +1,53 @@
+# Généré par engine/tick.mjs — ne pas éditer.
+version: 1
+joueur: kael
+tick: 2
+score_total: 100
+points_militaires: 0
+rang: 999
+alliance: null
+planetes:
+  - nom: kael-prima
+    coordonnees:
+      - 1
+      - 1
+      - 4
+    type: tellurique
+    champs:
+      utilises: 0
+      total: 221
+    ressources:
+      ferrum:
+        stock: 752
+        production_par_utj: 72
+        capacite: 100000
+      lumen:
+        stock: 701
+        production_par_utj: 20
+        capacite: 100000
+      plasmide:
+        stock: 0
+        production_par_utj: 0
+        capacite: 100000
+    energie:
+      production: 0
+      consommation: 0
+    batiments:
+      mine_ferrum: 1
+      extracteur_lumen: 0
+      synthetiseur_plasmide: 0
+      centrale_solaire: 0
+      depot: 0
+      usine_robotique: 0
+      chantier_spatial: 0
+      laboratoire: 0
+    file_chantier:
+      - batiment: extracteur_lumen
+        niveau_cible: 1
+        fin_utj: 2
+    file_construction: []
+    flotte_au_sol: {}
+    defenses: {}
+flottes_en_vol: []
+recherche: {}
+file_recherche: []

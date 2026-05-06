@@ -1,0 +1,14 @@
+# Généré par engine/tick.mjs — ne pas éditer.
+version: 1
+protocol_version: 0.1
+serveur: aetheris-1
+tick: 2
+seed: 0xf057ddd71510a983
+demarrage_iso: "2026-05-06T21:18:33.928Z"
+duree_tick_min: 15
+parametres:
+  galaxies: 1
+  systemes_par_galaxie: 3
+  positions_par_systeme: 15
+  planetes_max_par_joueur: 9
+hash_etat: "sha256:55d9ae2e1934e7ae2925f5eb66e5e248"

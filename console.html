@@ -1,0 +1,1247 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>AETHERIS // PROTOCOL — Console</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-0: #06080d; --bg-1: #0b1018; --bg-2: #11171f; --bg-3: #1a212c;
+  --line: #1f2731; --line-bright: #2c3845;
+  --text: #d8e1ec; --text-dim: #7d8a9c; --text-mute: #4a5566;
+  --cyan: #5ce1e6; --cyan-dim: #2a8a8e;
+  --orange: #ff9b50; --orange-dim: #b86a2c;
+  --red: #ff5a5a; --green: #5cdd9b; --violet: #b78cff; --gold: #ffd56a;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; }
+body {
+  background: var(--bg-0); color: var(--text);
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: 14px; line-height: 1.5; overflow: hidden;
+  background-image:
+    radial-gradient(ellipse at 20% 0%, rgba(92, 225, 230, 0.06), transparent 50%),
+    radial-gradient(ellipse at 80% 100%, rgba(255, 155, 80, 0.05), transparent 50%);
+}
+.stars {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    radial-gradient(1px 1px at 13% 22%, #fff, transparent),
+    radial-gradient(1px 1px at 38% 71%, #cce, transparent),
+    radial-gradient(1px 1px at 67% 14%, #fff, transparent),
+    radial-gradient(1px 1px at 84% 47%, #aaf, transparent),
+    radial-gradient(1px 1px at 91% 82%, #fff, transparent),
+    radial-gradient(2px 2px at 71% 91%, var(--cyan), transparent),
+    radial-gradient(2px 2px at 17% 12%, var(--orange), transparent);
+  opacity: 0.6;
+}
+.app {
+  position: relative; z-index: 1;
+  display: grid;
+  grid-template-columns: 240px 1fr 320px;
+  grid-template-rows: 56px 1fr 28px;
+  height: 100vh;
+}
+.topbar {
+  grid-column: 1 / -1;
+  display: flex; align-items: center; padding: 0 18px;
+  background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+  border-bottom: 1px solid var(--line); gap: 18px;
+}
+.brand { font-family: 'JetBrains Mono', monospace; font-weight: 700; letter-spacing: 0.04em; font-size: 13px; display: flex; align-items: center; gap: 10px; }
+.brand .glyph {
+  width: 22px; height: 22px; border: 1px solid var(--cyan); border-radius: 50%;
+  position: relative; box-shadow: 0 0 12px rgba(92, 225, 230, 0.3) inset, 0 0 8px rgba(92, 225, 230, 0.4);
+}
+.brand .glyph::after { content: ''; position: absolute; inset: 4px; background: var(--cyan); border-radius: 50%; box-shadow: 0 0 6px var(--cyan); }
+.brand .slash { color: var(--text-mute); }
+.brand .protocol { color: var(--cyan); }
+.tick-info { display: flex; gap: 22px; align-items: center; font-family: 'JetBrains Mono', monospace; font-size: 12px; margin-left: auto; }
+.tick-info .item { display: flex; flex-direction: column; gap: 2px; }
+.tick-info .label { color: var(--text-mute); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; }
+.tick-info .value { color: var(--text); }
+.tick-info .value.cyan { color: var(--cyan); }
+.tick-info .value.orange { color: var(--orange); }
+.tick-progress { width: 90px; height: 4px; background: var(--bg-3); border-radius: 2px; overflow: hidden; position: relative; }
+.tick-progress::after { content: ''; position: absolute; inset: 0; width: var(--tick-pct, 45%); background: linear-gradient(90deg, var(--cyan-dim), var(--cyan)); box-shadow: 0 0 8px var(--cyan); }
+.player-pill { display: flex; align-items: center; gap: 10px; padding: 6px 12px; background: var(--bg-3); border: 1px solid var(--line-bright); border-radius: 999px; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+.player-pill .dot { width: 6px; height: 6px; background: var(--green); border-radius: 50%; box-shadow: 0 0 6px var(--green); }
+.player-pill .alliance { color: var(--cyan); }
+
+/* sidebar */
+.sidebar { background: var(--bg-1); border-right: 1px solid var(--line); overflow-y: auto; padding: 16px 0; }
+.nav-section { padding: 0 14px 14px; }
+.nav-title { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-mute); letter-spacing: 0.15em; text-transform: uppercase; padding: 8px 6px; display: flex; justify-content: space-between; }
+.nav-title .count { color: var(--cyan-dim); }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 6px; cursor: pointer; font-size: 13px; color: var(--text-dim); border: 1px solid transparent; margin-bottom: 2px; }
+.nav-item:hover { background: var(--bg-2); color: var(--text); }
+.nav-item.active { background: var(--bg-2); border-color: var(--line-bright); color: var(--text); position: relative; }
+.nav-item.active::before { content: ''; position: absolute; left: -1px; top: 6px; bottom: 6px; width: 2px; background: var(--cyan); box-shadow: 0 0 6px var(--cyan); }
+.nav-item .icon { width: 16px; height: 16px; flex-shrink: 0; color: var(--text-mute); }
+.nav-item.active .icon { color: var(--cyan); }
+.nav-item .label { flex: 1; }
+.nav-item .meta { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-mute); }
+.tree-item { font-family: 'JetBrains Mono', monospace; font-size: 11px; padding: 5px 10px 5px 18px; color: var(--text-dim); cursor: pointer; display: flex; align-items: center; gap: 6px; border-radius: 4px; }
+.tree-item:hover { color: var(--text); background: var(--bg-2); }
+.tree-item.active { background: var(--bg-2); color: var(--cyan); }
+.tree-item .coords { color: var(--text-mute); margin-left: auto; }
+.tree-item.dir { color: var(--text-mute); }
+.tree-item.dir::before { content: '▾'; margin-right: 4px; font-size: 9px; }
+
+/* main */
+.main { background: var(--bg-0); overflow-y: auto; position: relative; }
+.view-header { padding: 18px 28px 14px; border-bottom: 1px solid var(--line); display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
+.view-title { display: flex; flex-direction: column; gap: 4px; }
+.view-breadcrumb { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-mute); letter-spacing: 0.05em; }
+.view-breadcrumb .sep { color: var(--line-bright); margin: 0 6px; }
+.view-breadcrumb .file { color: var(--cyan); }
+.view-h1 { font-size: 24px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+.view-h1 .id-mono { font-family: 'JetBrains Mono', monospace; font-size: 14px; color: var(--text-mute); margin-left: 10px; }
+.view-actions { display: flex; gap: 8px; align-items: center; }
+.btn { font-family: inherit; font-size: 12px; padding: 7px 14px; background: var(--bg-2); color: var(--text); border: 1px solid var(--line-bright); border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.btn:hover { background: var(--bg-3); border-color: var(--cyan-dim); }
+.btn.primary { background: var(--cyan-dim); color: var(--bg-0); border-color: var(--cyan); font-weight: 600; }
+.btn.primary:hover { background: var(--cyan); }
+.btn.danger { color: var(--red); border-color: rgba(255, 90, 90, 0.3); }
+.btn.danger:hover { background: rgba(255, 90, 90, 0.1); }
+.btn.ghost { background: transparent; }
+.btn.compact { padding: 4px 10px; font-size: 11px; }
+.btn .icon { width: 12px; height: 12px; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.view-body { padding: 22px 28px; }
+.planet-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 22px; }
+
+.planet-visual { position: relative; background: linear-gradient(180deg, var(--bg-2), var(--bg-1)); border: 1px solid var(--line); border-radius: 8px; padding: 28px; overflow: hidden; }
+.planet-visual::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 30% 40%, rgba(92, 225, 230, 0.08), transparent 60%); pointer-events: none; }
+.planet-orb { width: 200px; height: 200px; margin: 8px auto 16px; border-radius: 50%; box-shadow: inset -30px -30px 60px rgba(0,0,0,0.6); position: relative; }
+.planet-orb.tellurique { background: radial-gradient(circle at 35% 30%, #f4b07a, #c4631a 40%, #5a280a 80%, #2a1404); box-shadow: inset -30px -30px 60px rgba(0,0,0,0.6), 0 0 80px rgba(255, 155, 80, 0.25); }
+.planet-orb.cristalline { background: radial-gradient(circle at 35% 30%, #b8e6f0, #5ce1e6 40%, #1a5a6a 80%, #04282e); box-shadow: inset -30px -30px 60px rgba(0,0,0,0.6), 0 0 80px rgba(92, 225, 230, 0.25); }
+.planet-orb.glacee { background: radial-gradient(circle at 35% 30%, #e8f0f8, #a4c8e0 40%, #4a6a8a 80%, #1a2838); box-shadow: inset -30px -30px 60px rgba(0,0,0,0.6), 0 0 80px rgba(168, 200, 224, 0.25); }
+.planet-orb.volcanique { background: radial-gradient(circle at 35% 30%, #ff8848, #d44818 40%, #5a1808 80%, #1a0804); box-shadow: inset -30px -30px 60px rgba(0,0,0,0.6), 0 0 80px rgba(255, 90, 50, 0.3); }
+.planet-orb::after { content: ''; position: absolute; inset: -28px; border-radius: 50%; border: 1px dashed rgba(92, 225, 230, 0.25); animation: orbit 80s linear infinite; }
+@keyframes orbit { to { transform: rotate(360deg); } }
+.planet-meta { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 14px; position: relative; }
+.planet-meta .cell { padding: 10px 12px; background: var(--bg-3); border: 1px solid var(--line); border-radius: 4px; }
+.planet-meta .cell .l { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-mute); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; }
+.planet-meta .cell .v { font-size: 14px; font-weight: 600; }
+.planet-meta .cell .v.cyan { color: var(--cyan); }
+.planet-meta .cell .v.orange { color: var(--orange); }
+
+.resources { display: flex; flex-direction: column; gap: 10px; }
+.res-row { background: var(--bg-2); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; position: relative; }
+.res-row .top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+.res-row .name { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); }
+.res-row .val { font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 700; }
+.res-row .val .delta { font-size: 10px; color: var(--green); margin-left: 6px; }
+.res-row .bar { height: 4px; background: var(--bg-3); border-radius: 2px; overflow: hidden; }
+.res-row .bar > div { height: 100%; transition: width .3s; }
+.res-row.ferrum .val { color: var(--orange); }
+.res-row.ferrum .bar > div { background: linear-gradient(90deg, var(--orange-dim), var(--orange)); }
+.res-row.lumen .val { color: var(--cyan); }
+.res-row.lumen .bar > div { background: linear-gradient(90deg, var(--cyan-dim), var(--cyan)); }
+.res-row.plasmide .val { color: var(--violet); }
+.res-row.plasmide .bar > div { background: linear-gradient(90deg, #5a3d8c, var(--violet)); }
+.res-row .bottom { display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-mute); margin-top: 4px; }
+
+.section-title { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-mute); margin: 22px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; }
+.section-title .right { font-size: 10px; color: var(--cyan-dim); text-transform: none; letter-spacing: 0.05em; }
+
+.buildings { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
+.building { background: var(--bg-2); border: 1px solid var(--line); border-radius: 4px; padding: 10px 12px; cursor: pointer; position: relative; transition: border-color .15s, background .15s; }
+.building:hover { border-color: var(--cyan-dim); background: var(--bg-3); }
+.building.queued { border-color: var(--orange-dim); background: linear-gradient(180deg, var(--bg-2), rgba(255, 155, 80, 0.05)); cursor: default; }
+.building.queued::after { content: ''; position: absolute; inset: 0; border-radius: 4px; border: 1px solid var(--orange); animation: pulse 2s infinite; pointer-events: none; }
+.building.unaffordable { opacity: 0.5; }
+@keyframes pulse { 0%,100% { opacity: 0.4; } 50% { opacity: 1; } }
+.building .name { font-size: 11px; color: var(--text-dim); margin-bottom: 2px; }
+.building .lvl { font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 700; color: var(--text); display: flex; align-items: baseline; gap: 6px; }
+.building .lvl .next { font-size: 11px; color: var(--orange); font-weight: 500; }
+.building .cost { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--text-mute); margin-top: 2px; }
+.building .progress { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--line); border-radius: 0 0 4px 4px; overflow: hidden; }
+.building .progress > div { height: 100%; background: var(--orange); transition: width .3s; }
+
+.order-queue { background: var(--bg-1); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.order-queue .head { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--line); background: var(--bg-2); }
+.order-queue .head .title { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.1em; color: var(--text-dim); }
+.order-queue .head .file { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--cyan-dim); }
+.order-row { padding: 12px 14px; border-bottom: 1px solid var(--line); display: flex; gap: 14px; align-items: center; }
+.order-row:last-child { border-bottom: none; }
+.order-row .badge { font-family: 'JetBrains Mono', monospace; font-size: 10px; padding: 3px 7px; border-radius: 3px; letter-spacing: 0.1em; text-transform: uppercase; flex-shrink: 0; }
+.badge.chantier { background: rgba(255, 155, 80, 0.15); color: var(--orange); }
+.badge.recherche { background: rgba(183, 140, 255, 0.15); color: var(--violet); }
+.badge.transport { background: rgba(92, 225, 230, 0.15); color: var(--cyan); }
+.order-row .desc { flex: 1; font-size: 13px; color: var(--text); min-width: 0; }
+.order-row .desc .mono { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-dim); }
+.order-row .when { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-mute); white-space: nowrap; }
+.order-row .x { color: var(--text-mute); cursor: pointer; padding: 4px 8px; }
+.order-row .x:hover { color: var(--red); }
+.order-empty { padding: 18px; text-align: center; color: var(--text-mute); font-size: 12px; font-style: italic; }
+
+/* inspector */
+.inspector { background: var(--bg-1); border-left: 1px solid var(--line); overflow-y: auto; }
+.inspector-tabs { display: flex; border-bottom: 1px solid var(--line); background: var(--bg-2); }
+.inspector-tab { flex: 1; padding: 10px; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.15em; color: var(--text-mute); cursor: pointer; border-bottom: 2px solid transparent; }
+.inspector-tab.active { color: var(--cyan); border-bottom-color: var(--cyan); }
+.inspector-body { padding: 14px; }
+.yaml-view { font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.6; background: var(--bg-0); border: 1px solid var(--line); border-radius: 4px; padding: 12px; white-space: pre-wrap; color: var(--text-dim); max-height: calc(100vh - 220px); overflow-y: auto; }
+.yaml-view .key { color: var(--cyan); }
+.yaml-view .str { color: var(--orange); }
+.yaml-view .num { color: var(--violet); }
+.yaml-view .comment { color: var(--text-mute); }
+.yaml-view .dash { color: var(--text-mute); }
+.kv-list { display: flex; flex-direction: column; gap: 6px; }
+.kv { display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 11px; padding: 4px 0; border-bottom: 1px dashed var(--line); }
+.kv .k { color: var(--text-mute); }
+.kv .v { color: var(--text); }
+
+/* statusbar */
+.statusbar { grid-column: 1 / -1; background: var(--bg-2); border-top: 1px solid var(--line); padding: 0 14px; display: flex; align-items: center; gap: 18px; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-mute); letter-spacing: 0.05em; }
+.statusbar .item { display: flex; align-items: center; gap: 6px; }
+.statusbar .dot { width: 6px; height: 6px; border-radius: 50%; }
+.statusbar .dot.green { background: var(--green); box-shadow: 0 0 4px var(--green); }
+.statusbar .dot.cyan { background: var(--cyan); box-shadow: 0 0 4px var(--cyan); }
+.statusbar .dot.orange { background: var(--orange); box-shadow: 0 0 4px var(--orange); }
+.statusbar .right { margin-left: auto; }
+
+/* toast */
+.toast { position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%); background: var(--bg-2); border: 1px solid var(--cyan-dim); border-radius: 4px; padding: 10px 18px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--cyan); box-shadow: 0 8px 30px rgba(0,0,0,0.5); z-index: 200; opacity: 0; transition: opacity .25s, transform .25s; pointer-events: none; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(-8px); }
+.toast.error { border-color: var(--red); color: var(--red); }
+.toast.warning { border-color: var(--orange); color: var(--orange); }
+
+/* dialog */
+.dialog-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+.dialog { background: var(--bg-1); border: 1px solid var(--line-bright); border-radius: 8px; width: 640px; max-width: 90vw; max-height: 80vh; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(92, 225, 230, 0.1); display: flex; flex-direction: column; }
+.dialog .h { padding: 14px 18px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+.dialog .h .t { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.1em; color: var(--cyan); }
+.dialog .b { padding: 18px; overflow-y: auto; flex: 1; }
+.dialog .f { padding: 12px 18px; border-top: 1px solid var(--line); display: flex; gap: 8px; justify-content: flex-end; flex-shrink: 0; }
+
+.view { display: none; }
+.view.active { display: block; }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--bg-1); }
+::-webkit-scrollbar-thumb { background: var(--bg-3); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--line-bright); }
+
+.muted { color: var(--text-mute); }
+.cyan { color: var(--cyan); }
+.orange { color: var(--orange); }
+.green { color: var(--green); }
+.mono { font-family: 'JetBrains Mono', monospace; }
+
+/* GDD content */
+.gdd { max-width: 820px; }
+.gdd p { color: var(--text-dim); margin: 12px 0; }
+.gdd h2 { font-size: 18px; border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-top: 32px; }
+.gdd h3 { font-size: 15px; margin-top: 20px; color: var(--cyan); font-family: 'JetBrains Mono', monospace; letter-spacing: 0.05em; }
+.gdd code { font-family: 'JetBrains Mono', monospace; font-size: 12px; background: var(--bg-2); padding: 1px 6px; border-radius: 3px; color: var(--orange); }
+.gdd pre { background: var(--bg-1); border: 1px solid var(--line); border-radius: 4px; padding: 14px; font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.6; color: var(--text-dim); overflow-x: auto; }
+.gdd ul { color: var(--text-dim); padding-left: 22px; }
+.gdd li { margin: 4px 0; }
+.callout { border-left: 3px solid var(--cyan); background: rgba(92, 225, 230, 0.05); padding: 12px 16px; margin: 14px 0; font-size: 13px; border-radius: 0 4px 4px 0; }
+
+/* mode badge */
+.mode-badge {
+  background: var(--bg-3); border: 1px solid var(--orange-dim);
+  color: var(--orange); padding: 4px 10px; border-radius: 3px;
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  letter-spacing: 0.1em; display: inline-flex; gap: 6px; align-items: center;
+}
+.mode-badge .dot { width: 6px; height: 6px; background: var(--orange); border-radius: 50%; box-shadow: 0 0 6px var(--orange); animation: pulse 2s infinite; }
+
+/* research grid */
+.research-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+.research-card { background: var(--bg-2); border: 1px solid var(--line); border-radius: 4px; padding: 12px; cursor: pointer; }
+.research-card:hover { border-color: var(--cyan-dim); }
+.research-card.queued { border-color: var(--violet); background: rgba(183, 140, 255, 0.05); }
+.research-card.unaffordable { opacity: 0.5; }
+.research-card .name { font-size: 12px; color: var(--text); }
+.research-card .lvl { font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 700; margin-top: 4px; }
+.research-card .lvl .next { font-size: 11px; color: var(--violet); margin-left: 6px; }
+.research-card .cost { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--text-mute); margin-top: 2px; }
+
+/* fleet */
+.fleet-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
+.fleet-card { background: var(--bg-2); border: 1px solid var(--line); border-radius: 4px; padding: 10px 12px; }
+.fleet-card .name { font-size: 11px; color: var(--text-dim); }
+.fleet-card .count { font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 700; color: var(--text); }
+.fleet-card .stats { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--text-mute); margin-top: 2px; }
+
+/* commits */
+.commit-log { background: var(--bg-1); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+.commit { display: grid; grid-template-columns: 90px 1fr 80px; gap: 10px; padding: 8px 12px; border-bottom: 1px solid var(--line); align-items: center; }
+.commit:last-child { border-bottom: none; }
+.commit .hash { color: var(--cyan-dim); }
+.commit .msg { color: var(--text); }
+.commit .author { color: var(--text-mute); text-align: right; font-size: 10px; }
+.commit .msg .tick-tag { background: rgba(92, 225, 230, 0.1); border: 1px solid var(--cyan-dim); color: var(--cyan); padding: 1px 6px; border-radius: 2px; font-size: 9px; margin-right: 6px; letter-spacing: 0.1em; }
+.commit.engine .msg::before { content: '⚙ '; color: var(--orange); }
+
+/* galaxy */
+.galaxy-canvas { position: relative; height: 600px; background: radial-gradient(ellipse at center, #0a1420 0%, #020407 80%); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.galaxy-canvas svg { width: 100%; height: 100%; display: block; }
+.galaxy-bg-stars { position: absolute; inset: 0; background-image: radial-gradient(1.5px 1.5px at 12% 18%, #fff, transparent), radial-gradient(1px 1px at 31% 67%, #cce, transparent), radial-gradient(2px 2px at 64% 81%, var(--cyan), transparent), radial-gradient(1px 1px at 78% 38%, #fff, transparent), radial-gradient(1.5px 1.5px at 88% 65%, #aaf, transparent); opacity: 0.5; }
+</style>
+</head>
+<body>
+<div class="stars"></div>
+
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="glyph"></div>
+      <span>AETHERIS</span>
+      <span class="slash">//</span>
+      <span class="protocol">PROTOCOL</span>
+    </div>
+
+    <span class="mode-badge"><span class="dot"></span>BAC À SABLE LOCAL</span>
+
+    <div class="tick-info">
+      <div class="item"><div class="label">Serveur</div><div class="value">alpha-7</div></div>
+      <div class="item"><div class="label">Tick</div><div class="value cyan" id="tickNum">0142</div></div>
+      <div class="item"><div class="label">Prochain dans</div><div class="value orange" id="tickCountdown">15:00</div></div>
+      <div class="tick-progress"></div>
+      <button class="btn compact" id="btnSimTick" title="Avancer d'un tick (simulation locale)">⏩ Sim. tick</button>
+    </div>
+
+    <div class="player-pill">
+      <span class="dot"></span>
+      <span>kael</span>
+      <span class="muted">·</span>
+      <span class="alliance">[AURA]</span>
+    </div>
+  </header>
+
+  <aside class="sidebar">
+    <div class="nav-section">
+      <div class="nav-title">Navigation</div>
+      <div class="nav-item active" data-view="planet">
+        <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="5"/><ellipse cx="8" cy="8" rx="7" ry="2.5" transform="rotate(-25 8 8)"/></svg>
+        <span class="label">Planète</span>
+        <span class="meta" id="navPlanetName">aetheris</span>
+      </div>
+      <div class="nav-item" data-view="research">
+        <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="5"/><path d="M5 5 L11 11 M11 5 L5 11"/></svg>
+        <span class="label">Recherche</span>
+        <span class="meta" id="navResearch">12 tech</span>
+      </div>
+      <div class="nav-item" data-view="fleet">
+        <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 12 L8 4 L14 12 Z"/><path d="M5 11 L11 11"/></svg>
+        <span class="label">Flotte</span>
+        <span class="meta" id="navFleet">9 types</span>
+      </div>
+      <div class="nav-item" data-view="galaxy">
+        <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><circle cx="8" cy="8" r="2" fill="currentColor"/></svg>
+        <span class="label">Galaxie</span>
+        <span class="meta">1:42</span>
+      </div>
+      <div class="nav-item" data-view="alliance">
+        <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="5" cy="6" r="2.5"/><circle cx="11" cy="6" r="2.5"/><path d="M2 14 C2 11 4 10 5 10 C6 10 7 11 8 11 C9 11 10 10 11 10 C12 10 14 11 14 14"/></svg>
+        <span class="label">Alliance</span>
+        <span class="meta">AURA</span>
+      </div>
+      <div class="nav-item" data-view="protocol">
+        <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="2" width="10" height="12" rx="1"/><path d="M5 5 L11 5 M5 8 L11 8 M5 11 L9 11"/></svg>
+        <span class="label">Protocole</span>
+        <span class="meta">v0.1</span>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-title">Mes planètes <span class="count" id="planetCount">3 / 9</span></div>
+      <div id="planetList"></div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-title">Repo</div>
+      <div class="tree-item dir">world</div>
+      <div class="tree-item">manifest.yaml</div>
+      <div class="tree-item">galaxie.yaml</div>
+      <div class="tree-item dir">joueurs/kael</div>
+      <div class="tree-item" style="color: var(--cyan);">empire.yaml</div>
+      <div class="tree-item" style="color: var(--orange);" id="ordersFileLabel">ordres.yaml</div>
+      <div class="tree-item dir">engine</div>
+      <div class="tree-item">tick.mjs</div>
+      <div class="tree-item">PROTOCOL.md</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <!-- ─── PLANET VIEW ─── -->
+    <section class="view active" data-view="planet">
+      <div class="view-header">
+        <div class="view-title">
+          <div class="view-breadcrumb">joueurs <span class="sep">/</span> kael <span class="sep">/</span> <span class="file">empire.yaml</span> <span class="sep">→</span> <span id="bcPlanet">planetes[0]</span></div>
+          <h1 class="view-h1"><span id="planetName">aetheris-prima</span> <span class="id-mono"><span id="planetCoords">[1:42:8]</span> · <span id="planetType">tellurique</span></span></h1>
+        </div>
+        <div class="view-actions">
+          <button class="btn" id="btnExportOrders">📄 Exporter ordres.yaml</button>
+        </div>
+      </div>
+
+      <div class="view-body">
+        <div class="planet-grid">
+          <div>
+            <div class="planet-visual">
+              <div class="planet-orb tellurique" id="planetOrb"></div>
+              <div class="planet-meta">
+                <div class="cell"><div class="l">Champs</div><div class="v cyan" id="metaChamps">24/263</div></div>
+                <div class="cell"><div class="l">Énergie</div><div class="v orange" id="metaEnergie">+2 300</div></div>
+                <div class="cell"><div class="l">Type</div><div class="v" id="metaType">Tellurique</div></div>
+                <div class="cell"><div class="l">Score plan.</div><div class="v" id="metaScore">312 500</div></div>
+              </div>
+            </div>
+
+            <div class="section-title">
+              Bâtiments
+              <span class="right" id="buildingsHint">Clique pour upgrader · 12 actifs · 0 en file</span>
+            </div>
+            <div class="buildings" id="buildingsGrid"></div>
+          </div>
+
+          <div>
+            <div class="section-title">Ressources <span class="right">prod. cumulée / tick</span></div>
+            <div class="resources" id="resourcesPanel"></div>
+
+            <div class="section-title">
+              Tour en cours <span class="right">tick <span id="orderTick">143</span></span>
+            </div>
+            <div class="order-queue" id="orderQueue"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── RESEARCH VIEW ─── -->
+    <section class="view" data-view="research">
+      <div class="view-header">
+        <div class="view-title">
+          <div class="view-breadcrumb">joueurs <span class="sep">/</span> kael <span class="sep">/</span> <span class="file">empire.yaml</span> <span class="sep">→</span> recherche</div>
+          <h1 class="view-h1">Arbre technologique <span class="id-mono">global · payé sur planète mère</span></h1>
+        </div>
+      </div>
+      <div class="view-body">
+        <div class="callout">
+          La recherche est <strong class="cyan">globale à l'empire</strong>. Le coût est payé sur la première planète qui peut le couvrir.
+          La vitesse dépend du <span class="mono">laboratoire</span> de plus haut niveau.
+          <span id="researchBudget" class="muted"></span>
+        </div>
+        <div class="research-grid" id="researchGrid"></div>
+      </div>
+    </section>
+
+    <!-- ─── FLEET VIEW ─── -->
+    <section class="view" data-view="fleet">
+      <div class="view-header">
+        <div class="view-title">
+          <div class="view-breadcrumb">joueurs <span class="sep">/</span> kael <span class="sep">/</span> <span class="file">empire.yaml</span> <span class="sep">→</span> flotte_au_sol</div>
+          <h1 class="view-h1">Flotte de <span id="fleetPlanetName">aetheris-prima</span> <span class="id-mono">au sol · prête à décoller</span></h1>
+        </div>
+      </div>
+      <div class="view-body">
+        <div class="callout">
+          Vue lecture seule pour le bac à sable. La construction de vaisseaux dépend du <span class="mono">chantier_spatial</span> de la planète. L'envoi de flotte (mission, attaque, transport) sera ajouté dans la prochaine itération.
+        </div>
+        <div class="fleet-grid" id="fleetGrid"></div>
+      </div>
+    </section>
+
+    <!-- ─── GALAXY VIEW ─── -->
+    <section class="view" data-view="galaxy">
+      <div class="view-header">
+        <div class="view-title">
+          <div class="view-breadcrumb">world <span class="sep">/</span> <span class="file">galaxie.yaml</span></div>
+          <h1 class="view-h1">Système Helios <span class="id-mono">1:42 · étoile G · 5 800 K</span></h1>
+        </div>
+      </div>
+      <div class="view-body">
+        <div class="galaxy-canvas">
+          <div class="galaxy-bg-stars"></div>
+          <svg viewBox="0 0 1500 600" preserveAspectRatio="xMidYMid meet">
+            <defs>
+              <radialGradient id="sun" cx="50%" cy="50%">
+                <stop offset="0%" stop-color="#fff8c0" stop-opacity="1"/>
+                <stop offset="40%" stop-color="#ffd56a" stop-opacity="0.8"/>
+                <stop offset="100%" stop-color="#ff9b50" stop-opacity="0"/>
+              </radialGradient>
+              <filter id="glow"><feGaussianBlur stdDeviation="2"/></filter>
+            </defs>
+            <circle cx="60" cy="300" r="80" fill="url(#sun)"/>
+            <circle cx="60" cy="300" r="22" fill="#fff8c0" filter="url(#glow)"/>
+            <text x="60" y="430" fill="#ffd56a" text-anchor="middle" font-family="JetBrains Mono" font-size="14" letter-spacing="2">HELIOS-42</text>
+            <line x1="140" y1="300" x2="1480" y2="300" stroke="#1f2731" stroke-dasharray="2 6"/>
+            <g transform="translate(200,300)"><circle r="3" fill="#7d8a9c" opacity="0.6"/><text y="-22" fill="#4a5566" text-anchor="middle" font-family="JetBrains Mono" font-size="9">01</text></g>
+            <g transform="translate(280,300)"><circle r="2" fill="#7d8a9c" opacity="0.6"/><text y="-22" fill="#4a5566" text-anchor="middle" font-family="JetBrains Mono" font-size="9">02</text></g>
+            <g transform="translate(360,300)"><circle r="13" fill="#a4502a" stroke="#ff5a5a" stroke-width="1.2"/><text y="-22" fill="#ff5a5a" text-anchor="middle" font-family="JetBrains Mono" font-size="9">03 · pyra</text><text y="32" fill="#ff5a5a" text-anchor="middle" font-family="JetBrains Mono" font-size="9">VEXOR</text></g>
+            <g transform="translate(440,300)"><circle r="11" fill="#a4502a" stroke="#ff5a5a" stroke-width="1.2"/><text y="-22" fill="#ff5a5a" text-anchor="middle" font-family="JetBrains Mono" font-size="9">04 · pyra-ii</text><text y="30" fill="#ff5a5a" text-anchor="middle" font-family="JetBrains Mono" font-size="9">VEXOR</text></g>
+            <g transform="translate(520,300)"><circle r="10" fill="#3d6b8a" stroke="#5ce1e6" stroke-width="1.2"/><text y="-22" fill="#5ce1e6" text-anchor="middle" font-family="JetBrains Mono" font-size="9">05 · forge</text><text y="29" fill="#5ce1e6" text-anchor="middle" font-family="JetBrains Mono" font-size="9">KAEL</text></g>
+            <g transform="translate(600,300)"><circle r="2" fill="#7d8a9c"/><text y="-22" fill="#4a5566" text-anchor="middle" font-family="JetBrains Mono" font-size="9">06</text></g>
+            <g transform="translate(680,300)"><circle r="11" fill="#3d6b8a" stroke="#5ce1e6" stroke-width="1.2" stroke-dasharray="2 2"/><text y="-22" fill="#5ce1e6" text-anchor="middle" font-family="JetBrains Mono" font-size="9">07 · solis</text><text y="30" fill="#5ce1e6" text-anchor="middle" font-family="JetBrains Mono" font-size="9">IRA</text></g>
+            <g transform="translate(770,300)"><circle r="18" fill="#3d6b8a" stroke="#5ce1e6" stroke-width="2"/><circle r="22" fill="none" stroke="#5ce1e6" stroke-width="1" opacity="0.5"/><text y="-32" fill="#5ce1e6" text-anchor="middle" font-family="JetBrains Mono" font-size="10" font-weight="700">08 · aetheris-prima</text><text y="42" fill="#5ce1e6" text-anchor="middle" font-family="JetBrains Mono" font-size="10" font-weight="700">★ KAEL ★</text></g>
+            <g transform="translate(870,300)"><circle r="11" fill="#5a8eb6" stroke="#5ce1e6" stroke-width="1.2"/><text y="-22" fill="#5ce1e6" text-anchor="middle" font-family="JetBrains Mono" font-size="9">09 · lumeris</text><text y="30" fill="#5ce1e6" text-anchor="middle" font-family="JetBrains Mono" font-size="9">KAEL</text></g>
+            <g transform="translate(960,300)"><circle r="10" fill="#7da6c8" stroke="#5ce1e6" stroke-width="1.2"/><text y="-22" fill="#5ce1e6" text-anchor="middle" font-family="JetBrains Mono" font-size="9">10 · ferrolune</text><text y="29" fill="#5ce1e6" text-anchor="middle" font-family="JetBrains Mono" font-size="9">KAEL</text></g>
+            <g transform="translate(1050,300)"><circle r="12" fill="#5a8eb6" stroke="#5ce1e6" stroke-width="1.2" stroke-dasharray="2 2"/><text y="-22" fill="#5ce1e6" text-anchor="middle" font-family="JetBrains Mono" font-size="9">11 · vega</text><text y="30" fill="#5ce1e6" text-anchor="middle" font-family="JetBrains Mono" font-size="9">NYX</text></g>
+            <g transform="translate(1140,300)"><circle r="10" fill="#6b6b6b" stroke="#7d8a9c" stroke-width="1"/><text y="-22" fill="#7d8a9c" text-anchor="middle" font-family="JetBrains Mono" font-size="9">12 · ouranis</text><text y="29" fill="#7d8a9c" text-anchor="middle" font-family="JetBrains Mono" font-size="9">DRAK</text></g>
+            <g transform="translate(1300,300)"><circle r="10" fill="#7a2828" stroke="#ff5a5a" stroke-width="1.2"/><text y="-22" fill="#ff5a5a" text-anchor="middle" font-family="JetBrains Mono" font-size="9">14 · cend</text><text y="29" fill="#ff5a5a" text-anchor="middle" font-family="JetBrains Mono" font-size="9">TARN [NOX]</text></g>
+            <g transform="translate(20,510)"><rect width="1460" height="80" fill="#0b1018" stroke="#1f2731" rx="4"/><g transform="translate(20,30)"><circle r="6" fill="#3d6b8a" stroke="#5ce1e6" stroke-width="1.2"/><text x="14" y="4" fill="#d8e1ec" font-family="JetBrains Mono" font-size="11">vous</text><circle cx="80" r="6" fill="#3d6b8a" stroke="#5ce1e6" stroke-width="1.2" stroke-dasharray="2 2"/><text x="94" y="4" fill="#d8e1ec" font-family="JetBrains Mono" font-size="11">allié [AURA]</text><circle cx="220" r="6" fill="#a4502a" stroke="#ff5a5a" stroke-width="1.2"/><text x="234" y="4" fill="#d8e1ec" font-family="JetBrains Mono" font-size="11">ennemi [NOX]</text><circle cx="360" r="6" fill="#6b6b6b" stroke="#7d8a9c" stroke-width="1"/><text x="374" y="4" fill="#d8e1ec" font-family="JetBrains Mono" font-size="11">neutre</text></g></g>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── ALLIANCE VIEW ─── -->
+    <section class="view" data-view="alliance">
+      <div class="view-header">
+        <div class="view-title">
+          <div class="view-breadcrumb">alliances <span class="sep">/</span> aura <span class="sep">/</span> <span class="file">charte.md</span></div>
+          <h1 class="view-h1">Aurora Concord <span class="id-mono">[AURA] · 47 membres · rang #4</span></h1>
+        </div>
+      </div>
+      <div class="view-body" style="max-width: 980px;">
+        <div style="background: var(--bg-1); border: 1px solid var(--line); border-radius: 8px; padding: 22px; margin-bottom: 14px;">
+          <div style="display: flex; gap: 16px; align-items: center; margin-bottom: 18px;">
+            <div style="width:56px;height:56px;border:2px solid var(--cyan);border-radius:4px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--cyan);font-size:18px;background:linear-gradient(135deg,rgba(92,225,230,0.15),transparent);">A</div>
+            <div style="flex: 1;">
+              <div class="mono cyan" style="font-size: 11px; letter-spacing: 0.15em;">[AURA]</div>
+              <h3 style="margin: 2px 0 4px; font-size: 22px;">Aurora Concord</h3>
+              <div class="muted" style="font-style: italic; font-size: 12px;">« Endure through the long night. »</div>
+            </div>
+            <div class="kv-list" style="text-align: right;">
+              <div class="kv"><span class="k">membres</span><span class="v">47</span></div>
+              <div class="kv"><span class="k">guerres</span><span class="v" style="color:var(--red)">1 (NOX)</span></div>
+            </div>
+          </div>
+          <div class="section-title" style="margin-top: 0;">Conseil <span class="right">9 plus hauts scores militaires</span></div>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+            <div class="fleet-card"><div class="name">1. NYX</div><div class="count" style="font-size:14px;">484K</div></div>
+            <div class="fleet-card" style="border-color: var(--cyan-dim);"><div class="name cyan">2. KAEL <span class="muted">(vous)</span></div><div class="count" style="font-size:14px;color:var(--cyan)">312K</div></div>
+            <div class="fleet-card"><div class="name">3. IRA</div><div class="count" style="font-size:14px;">158K</div></div>
+            <div class="fleet-card"><div class="name">4. AKIRO</div><div class="count" style="font-size:14px;">142K</div></div>
+            <div class="fleet-card"><div class="name">5. MAESTRA</div><div class="count" style="font-size:14px;">128K</div></div>
+            <div class="fleet-card"><div class="name">6. THORN</div><div class="count" style="font-size:14px;">110K</div></div>
+            <div class="fleet-card" style="border-color: var(--orange-dim);"><div class="name">7. EVAN-7 <span class="orange mono" style="font-size:10px;">[IA]</span></div><div class="count" style="font-size:14px;color:var(--orange)">96K</div></div>
+            <div class="fleet-card"><div class="name">8. RILA</div><div class="count" style="font-size:14px;">88K</div></div>
+            <div class="fleet-card"><div class="name">9. VENNIK</div><div class="count" style="font-size:14px;">81K</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── PROTOCOL VIEW ─── -->
+    <section class="view" data-view="protocol">
+      <div class="view-header">
+        <div class="view-title">
+          <div class="view-breadcrumb">engine <span class="sep">/</span> <span class="file">PROTOCOL.md</span></div>
+          <h1 class="view-h1">AETHERIS // PROTOCOL <span class="id-mono">v0.1</span></h1>
+        </div>
+      </div>
+      <div class="view-body gdd">
+        <div class="callout"><strong class="cyan">Bac à sable local.</strong> Cette UI charge l'état initial des fichiers <code>.yaml</code> en mémoire et simule les ticks côté navigateur. Pour passer en mode protocole : exporter <code>ordres.yaml</code> depuis la vue Planète, le commiter dans le repo, l'engine résoudra le tick suivant.</div>
+        <h2>Topologie du repo</h2>
+        <pre>aetheris-alpha-7/
+├── README.md
+├── world/
+│   ├── manifest.yaml      tick courant, seed
+│   └── galaxie.yaml       carte canonique
+├── joueurs/&lt;nom&gt;/
+│   ├── identite.yaml      clé publique Ed25519
+│   ├── empire.yaml        état (généré)
+│   ├── ordres.yaml        ← TU ÉCRIS ICI
+│   ├── ordres-scelles.yaml
+│   └── revelations.yaml
+├── alliances/&lt;tag&gt;/
+└── engine/
+    ├── PROTOCOL.md        spec complète
+    ├── tick.mjs           résolveur (~600 lignes)
+    └── rules.yaml         constantes du jeu</pre>
+        <h2>Boucle de jeu</h2>
+        <pre>1. Tu lis joueurs/&lt;toi&gt;/empire.yaml
+2. Tu écris des ordres dans ordres.yaml
+3. Tu signes (Ed25519) et tu push
+4. Toutes les 15 min, GitHub Action lance tick.mjs
+5. tick.mjs lit tous les ordres, résout, écrit le nouvel état
+6. Goto 1.</pre>
+        <h2>L'API pour les agents IA</h2>
+        <pre>moi = yaml.load("joueurs/mon_nom/empire.yaml")
+ordres = decider(moi)
+yaml.dump({ ordres, tick_cible: ... }, "joueurs/mon_nom/ordres.yaml")
+git.commit_and_push()</pre>
+      </div>
+    </section>
+  </main>
+
+  <aside class="inspector">
+    <div class="inspector-tabs">
+      <div class="inspector-tab active" data-tab="yaml">YAML</div>
+      <div class="inspector-tab" data-tab="orders">ORDRES</div>
+      <div class="inspector-tab" data-tab="commits">COMMITS</div>
+    </div>
+    <div class="inspector-body">
+      <div id="inspectorYaml">
+        <div class="kv-list" style="margin-bottom: 14px;">
+          <div class="kv"><span class="k">fichier</span><span class="v cyan" id="iFile">empire.yaml</span></div>
+          <div class="kv"><span class="k">tick</span><span class="v" id="iTick">142</span></div>
+          <div class="kv"><span class="k">joueur</span><span class="v">kael</span></div>
+          <div class="kv"><span class="k">vérifié</span><span class="v green">✓ déterministe</span></div>
+        </div>
+        <div class="yaml-view" id="yamlView"></div>
+      </div>
+      <div id="inspectorOrders" style="display:none;">
+        <div class="kv-list" style="margin-bottom: 14px;">
+          <div class="kv"><span class="k">fichier</span><span class="v orange">ordres.yaml</span></div>
+          <div class="kv"><span class="k">tick cible</span><span class="v" id="iOrderTick">143</span></div>
+          <div class="kv"><span class="k">ordres</span><span class="v" id="iOrderCount">0</span></div>
+        </div>
+        <div class="yaml-view" id="ordersView"></div>
+      </div>
+      <div id="inspectorCommits" style="display:none;">
+        <div class="commit-log" id="commitLog"></div>
+      </div>
+    </div>
+  </aside>
+
+  <footer class="statusbar">
+    <span class="item"><span class="dot green"></span>état chargé</span>
+    <span class="item">simulation locale · pas de push réel</span>
+    <span class="item" id="statusOrders">0 ordre en attente</span>
+    <span class="right" id="statusHash">tick 142 · seed 0xa3f2c19e4b8d0721</span>
+  </footer>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="dialog-overlay" id="exportDialog" style="display:none;"></div>
+
+<!-- ═══════════ ENGINE ═══════════ -->
+<script>
+// ─── REGLES (extrait suffisant pour le bac à sable) ───
+const RULES = {
+  duree_utj_par_tick: 6,
+  batiments: {
+    mine_ferrum:           { label: "Mine de Ferrum",     cout_base: { ferrum: 60,  lumen: 15  }, mc: 1.5, prod_base: 30, res: "ferrum" },
+    extracteur_lumen:      { label: "Extracteur Lumen",   cout_base: { ferrum: 48,  lumen: 24  }, mc: 1.6, prod_base: 20, res: "lumen" },
+    synthetiseur_plasmide: { label: "Synthétiseur Plasmide", cout_base: { ferrum: 225, lumen: 75  }, mc: 1.5, prod_base: 10, res: "plasmide" },
+    centrale_solaire:      { label: "Centrale solaire",   cout_base: { ferrum: 75,  lumen: 30  }, mc: 1.5 },
+    reacteur_fusion:       { label: "Réacteur fusion",    cout_base: { ferrum: 900, lumen: 360, plasmide: 180 }, mc: 1.8 },
+    depot:                 { label: "Dépôt",              cout_base: { ferrum: 1000 }, mc: 2.0 },
+    usine_robotique:       { label: "Usine robotique",    cout_base: { ferrum: 400, lumen: 120, plasmide: 200 }, mc: 2.0 },
+    chantier_spatial:      { label: "Chantier spatial",   cout_base: { ferrum: 400, lumen: 200, plasmide: 100 }, mc: 2.0 },
+    laboratoire:           { label: "Laboratoire",        cout_base: { ferrum: 200, lumen: 400, plasmide: 200 }, mc: 2.0 },
+    silo_missiles:         { label: "Silo missiles",      cout_base: { ferrum: 20000, lumen: 20000, plasmide: 1000 }, mc: 2.0 },
+    terminal_marchand:     { label: "Terminal marchand",  cout_base: { ferrum: 1000, lumen: 1000 }, mc: 2.0 },
+    centre_diplomatique:   { label: "Centre diplomatique",cout_base: { ferrum: 5000, lumen: 2000 }, mc: 2.5 },
+  },
+  recherches: {
+    robotique:           { label: "Robotique",            cout_base: { ferrum: 400, lumen: 120 },  mc: 2.0 },
+    automation_miniere:  { label: "Automation minière",   cout_base: { ferrum: 400, lumen: 200 },  mc: 1.8 },
+    fusion_controlee:    { label: "Fusion contrôlée",     cout_base: { ferrum: 800, lumen: 400, plasmide: 200 }, mc: 1.8 },
+    drives_impulsion:    { label: "Drives d'impulsion",   cout_base: { ferrum: 2000, lumen: 4000 }, mc: 2.0 },
+    drive_hyperspatial:  { label: "Drive hyperspatial",   cout_base: { ferrum: 10000, lumen: 20000, plasmide: 6000 }, mc: 2.0 },
+    armement:            { label: "Armement",             cout_base: { ferrum: 800, lumen: 200 },  mc: 2.0 },
+    bouclier_graviton:   { label: "Bouclier à graviton",  cout_base: { ferrum: 200, lumen: 1000 }, mc: 2.0 },
+    espionnage_profond:  { label: "Espionnage profond",   cout_base: { ferrum: 200, lumen: 1000, plasmide: 200 }, mc: 2.0 },
+    cryptographie:       { label: "Cryptographie",        cout_base: { ferrum: 1000, lumen: 500 }, mc: 2.0 },
+    diplomatie:          { label: "Diplomatie",           cout_base: { ferrum: 200, lumen: 200 },  mc: 1.5 },
+  },
+  vaisseaux: {
+    sonde:           { label: "Sonde",          attaque: 0,   coque: 10,    bouclier: 0.1 },
+    chasseur_leger:  { label: "Chasseur léger", attaque: 50,  coque: 400,   bouclier: 10  },
+    chasseur_lourd:  { label: "Chasseur lourd", attaque: 150, coque: 1000,  bouclier: 25  },
+    croiseur:        { label: "Croiseur",       attaque: 400, coque: 2700,  bouclier: 50  },
+    fregate:         { label: "Frégate",        attaque: 700, coque: 3500,  bouclier: 100 },
+    cuirasse:        { label: "Cuirassé",       attaque: 1000, coque: 6000, bouclier: 200 },
+    destroyer:       { label: "Destroyer",      attaque: 2000, coque: 11000, bouclier: 500 },
+    cargo_lourd:     { label: "Cargo lourd",    attaque: 5,   coque: 1200,  bouclier: 25 },
+    recycleur:       { label: "Recycleur",      attaque: 1,   coque: 1600,  bouclier: 10 },
+    vaisseau_colon:  { label: "Vaisseau colon", attaque: 0,   coque: 3000,  bouclier: 100 },
+  },
+};
+
+// ─── ÉTAT INITIAL (équivalent des YAML chargés) ───
+const initialState = {
+  manifest: { tick: 142, seed: "0xa3f2c19e4b8d0721" },
+  joueur: "kael",
+  alliance: "AURA",
+  recherche: { robotique: 12, automation_miniere: 11, fusion_controlee: 11, drives_impulsion: 10, drive_hyperspatial: 8, armement: 9, bouclier_graviton: 7, espionnage_profond: 6, cryptographie: 4, diplomatie: 5 },
+  file_recherche: [],
+  planetes: [
+    {
+      nom: "aetheris-prima", coordonnees: [1, 42, 8], type: "tellurique",
+      champs: { utilises: 24, total: 263 },
+      ressources: {
+        ferrum:   { stock: 2847520, production_par_utj: 2080, capacite: 5000000 },
+        lumen:    { stock: 1204880, production_par_utj: 1020, capacite: 3000000 },
+        plasmide: { stock:  487213, production_par_utj:  470, capacite: 2000000 },
+      },
+      energie: { production: 14200, consommation: 11900 },
+      batiments: { mine_ferrum: 24, extracteur_lumen: 21, synthetiseur_plasmide: 18, centrale_solaire: 22, reacteur_fusion: 12, depot: 14, usine_robotique: 11, chantier_spatial: 13, laboratoire: 14, silo_missiles: 6, terminal_marchand: 8, centre_diplomatique: 4 },
+      file_chantier: [{ batiment: "mine_ferrum", niveau_cible: 25, fin_utj: 16 }],
+      flotte_au_sol: { sonde: 124, chasseur_leger: 8420, chasseur_lourd: 1240, croiseur: 480, fregate: 220, cuirasse: 84, destroyer: 12, cargo_lourd: 340, recycleur: 60, vaisseau_colon: 1 },
+    },
+    {
+      nom: "lumeris", coordonnees: [1, 42, 9], type: "cristalline",
+      champs: { utilises: 18, total: 180 },
+      ressources: {
+        ferrum:   { stock:  421000, production_par_utj: 1100, capacite: 2000000 },
+        lumen:    { stock:  982000, production_par_utj: 1380, capacite: 2000000 },
+        plasmide: { stock:  154000, production_par_utj:  280, capacite: 1000000 },
+      },
+      energie: { production: 9200, consommation: 8400 },
+      batiments: { mine_ferrum: 19, extracteur_lumen: 22, synthetiseur_plasmide: 15, centrale_solaire: 19, reacteur_fusion: 8, depot: 11, usine_robotique: 8, chantier_spatial: 9, laboratoire: 12 },
+      file_chantier: [],
+      flotte_au_sol: { chasseur_leger: 320, cargo_lourd: 80 },
+    },
+    {
+      nom: "ferrolune", coordonnees: [1, 42, 10], type: "glacee",
+      champs: { utilises: 15, total: 162 },
+      ressources: {
+        ferrum:   { stock: 1820000, production_par_utj: 850, capacite: 6000000 },
+        lumen:    { stock:  540000, production_par_utj: 420, capacite: 4000000 },
+        plasmide: { stock:   88000, production_par_utj: 180, capacite: 2500000 },
+      },
+      energie: { production: 6400, consommation: 5800 },
+      batiments: { mine_ferrum: 16, extracteur_lumen: 14, synthetiseur_plasmide: 12, centrale_solaire: 16, reacteur_fusion: 6, depot: 18, usine_robotique: 6, chantier_spatial: 7 },
+      file_chantier: [],
+      flotte_au_sol: {},
+    },
+  ],
+  ordres: [],   // ce que le joueur prépare pour le tick suivant
+  commits: [
+    { hash: "a3f2c19", msg: "tick 142: 3 ordres, 0 batailles", author: "engine", isEngine: true, tick: 142 },
+    { hash: "8b7e445", msg: "kael: tour 142", author: "kael", isEngine: false },
+    { hash: "9c1d822", msg: "ira: tour 142", author: "ira", isEngine: false },
+    { hash: "f4a91c8", msg: "tick 141: 5 ordres, 1 bataille", author: "engine", isEngine: true, tick: 141 },
+    { hash: "2d83e10", msg: "vexor: tour 141", author: "vexor", isEngine: false },
+  ],
+};
+
+// État courant (clone profond)
+let state = JSON.parse(JSON.stringify(initialState));
+let currentPlanetIdx = 0;
+
+// ─── HELPERS ───
+const fmt = (n) => Math.floor(n).toLocaleString('fr-FR').replace(/,/g, ' ');
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => document.querySelectorAll(s);
+
+function toast(msg, type = '') {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  clearTimeout(t._tm);
+  t._tm = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+function buildingCost(key, level) {
+  const def = RULES.batiments[key];
+  if (!def) return {};
+  const mult = Math.pow(def.mc, level);
+  const cost = {};
+  for (const [k, v] of Object.entries(def.cout_base)) cost[k] = Math.floor(v * mult);
+  return cost;
+}
+
+function buildingDuration(key, level) {
+  // Approximation : durée_base * 1.5^niveau, capée pour éviter des temps absurdes en début
+  const baseMap = { mine_ferrum: 1, extracteur_lumen: 1.2, synthetiseur_plasmide: 1.5 };
+  const base = baseMap[key] || 2;
+  return Math.max(1, Math.ceil(base * Math.pow(1.5, level)));
+}
+
+function researchCost(key, level) {
+  const def = RULES.recherches[key];
+  if (!def) return {};
+  const mult = Math.pow(def.mc, level);
+  const cost = {};
+  for (const [k, v] of Object.entries(def.cout_base)) cost[k] = Math.floor(v * mult);
+  return cost;
+}
+
+function researchDuration(key, level) {
+  return Math.max(1, Math.ceil(2 * Math.pow(2, level)));
+}
+
+function canAfford(planete, cost) {
+  for (const [k, v] of Object.entries(cost)) {
+    if ((planete.ressources[k]?.stock || 0) < v) return false;
+  }
+  return true;
+}
+
+function findPayingPlanet(cost) {
+  return state.planetes.find(p => canAfford(p, cost));
+}
+
+// ─── RENDU PLANETE ───
+function renderPlanetList() {
+  const list = $('#planetList');
+  list.innerHTML = state.planetes.map((p, i) => `
+    <div class="tree-item ${i === currentPlanetIdx ? 'active' : ''}" data-idx="${i}">
+      ${i === currentPlanetIdx ? '▸' : '·'} ${p.nom}
+      <span class="coords">${p.coordonnees.join(':')}</span>
+    </div>
+  `).join('');
+  list.querySelectorAll('[data-idx]').forEach(el => {
+    el.onclick = () => { currentPlanetIdx = parseInt(el.dataset.idx); render(); };
+  });
+  $('#planetCount').textContent = `${state.planetes.length} / 9`;
+  $('#navPlanetName').textContent = state.planetes[currentPlanetIdx].nom.split('-')[0];
+}
+
+function renderPlanet() {
+  const p = state.planetes[currentPlanetIdx];
+
+  $('#planetName').textContent = p.nom;
+  $('#planetCoords').textContent = `[${p.coordonnees.join(':')}]`;
+  $('#planetType').textContent = p.type;
+  $('#bcPlanet').textContent = `planetes[${currentPlanetIdx}]`;
+  $('#metaChamps').textContent = `${p.champs.utilises}/${p.champs.total}`;
+  $('#metaEnergie').textContent = `+${fmt(p.energie.production - p.energie.consommation)}`;
+  $('#metaType').textContent = p.type.charAt(0).toUpperCase() + p.type.slice(1);
+  $('#metaScore').textContent = fmt(Object.values(p.batiments).reduce((a, b) => a + b * 100, 0));
+
+  // orbe planète
+  const orb = $('#planetOrb');
+  orb.className = 'planet-orb ' + p.type;
+
+  // ressources
+  const resPanel = $('#resourcesPanel');
+  const resGlyph = { ferrum: '▣', lumen: '◇', plasmide: '⬢' };
+  resPanel.innerHTML = ['ferrum', 'lumen', 'plasmide'].map(r => {
+    const info = p.ressources[r];
+    const pct = Math.min(100, (info.stock / info.capacite) * 100);
+    const perTick = info.production_par_utj * RULES.duree_utj_par_tick;
+    return `
+      <div class="res-row ${r}">
+        <div class="top">
+          <span class="name">${resGlyph[r]} ${r}</span>
+          <span class="val">${fmt(info.stock)}<span class="delta">+${fmt(perTick)} / tick</span></span>
+        </div>
+        <div class="bar"><div style="width: ${pct}%"></div></div>
+        <div class="bottom"><span>+${fmt(info.production_par_utj)} / UTJ</span><span>${pct.toFixed(0)}% / ${fmt(info.capacite)}</span></div>
+      </div>`;
+  }).join('');
+
+  // bâtiments
+  const grid = $('#buildingsGrid');
+  const queuedKeys = new Set(p.file_chantier.map(c => c.batiment));
+  grid.innerHTML = Object.keys(RULES.batiments).map(key => {
+    const def = RULES.batiments[key];
+    const lvl = p.batiments[key] || 0;
+    const queued = queuedKeys.has(key);
+    const cost = buildingCost(key, lvl);
+    const afford = canAfford(p, cost);
+    const queueItem = p.file_chantier.find(c => c.batiment === key);
+    const totalDur = queueItem ? buildingDuration(key, lvl) : 0;
+    const progress = queueItem ? Math.max(0, ((totalDur - queueItem.fin_utj) / totalDur) * 100) : 0;
+
+    return `
+      <div class="building ${queued ? 'queued' : ''} ${!afford && !queued ? 'unaffordable' : ''}" data-bldg="${key}">
+        <div class="name">${def.label}</div>
+        <div class="lvl">${lvl}${queued ? '' : `<span class="next">→ ${lvl + 1}</span>`}</div>
+        <div class="cost">${queued ? `en cours · ${queueItem.fin_utj} UTJ` : Object.entries(cost).map(([k,v]) => `${fmt(v)} ${k.slice(0,1)}`).join(' · ')}</div>
+        ${queued ? `<div class="progress"><div style="width:${progress}%"></div></div>` : ''}
+      </div>`;
+  }).join('');
+
+  $('#buildingsHint').textContent = `Clique pour upgrader · ${Object.keys(p.batiments).length} actifs · ${p.file_chantier.length} en file`;
+
+  grid.querySelectorAll('[data-bldg]').forEach(el => {
+    el.onclick = () => upgradeBuilding(el.dataset.bldg);
+  });
+
+  renderOrders();
+}
+
+function renderOrders() {
+  const q = $('#orderQueue');
+  $('#orderTick').textContent = state.manifest.tick + 1;
+  $('#statusOrders').textContent = `${state.ordres.length} ordre(s) en attente`;
+
+  if (state.ordres.length === 0) {
+    q.innerHTML = `
+      <div class="head">
+        <span class="title">ORDRES À SIGNER</span>
+        <span class="file">joueurs/kael/ordres.yaml</span>
+      </div>
+      <div class="order-empty">Aucun ordre. Clique sur un bâtiment ou une recherche pour préparer ton tour.</div>`;
+    return;
+  }
+
+  let html = `<div class="head"><span class="title">ORDRES À SIGNER</span><span class="file">joueurs/kael/ordres.yaml</span></div>`;
+  state.ordres.forEach((o, i) => {
+    let desc = '', when = '', badge = o.type;
+    if (o.type === 'chantier') {
+      const def = RULES.batiments[o.batiment];
+      desc = `<strong>${def.label} → ${o.niveau_cible}</strong><br/><span class="mono">${o.planete} · coût ${Object.entries(o.cost).map(([k,v]) => `${fmt(v)} ${k}`).join(' + ')}</span>`;
+      when = `${o.duree_utj} UTJ`;
+    } else if (o.type === 'recherche') {
+      const def = RULES.recherches[o.technologie];
+      desc = `<strong>${def.label} → ${o.niveau_cible}</strong><br/><span class="mono">global · coût ${Object.entries(o.cost).map(([k,v]) => `${fmt(v)} ${k}`).join(' + ')}</span>`;
+      when = `${o.duree_utj} UTJ`;
+    }
+    html += `<div class="order-row">
+      <span class="badge ${badge}">${badge}</span>
+      <div class="desc">${desc}</div>
+      <span class="when">${when}</span>
+      <span class="x" data-cancel="${i}" title="Annuler">✕</span>
+    </div>`;
+  });
+  q.innerHTML = html;
+  q.querySelectorAll('[data-cancel]').forEach(el => {
+    el.onclick = () => cancelOrder(parseInt(el.dataset.cancel));
+  });
+}
+
+// ─── ACTIONS ───
+function upgradeBuilding(key) {
+  const p = state.planetes[currentPlanetIdx];
+  if (p.file_chantier.find(c => c.batiment === key)) {
+    toast(`${RULES.batiments[key].label} déjà en file de construction`, 'warning');
+    return;
+  }
+  const lvl = p.batiments[key] || 0;
+  const cost = buildingCost(key, lvl);
+  if (!canAfford(p, cost)) {
+    toast(`Ressources insuffisantes pour ${RULES.batiments[key].label} ${lvl + 1}`, 'error');
+    return;
+  }
+
+  // Débite et met en file
+  for (const [k, v] of Object.entries(cost)) p.ressources[k].stock -= v;
+  const dur = buildingDuration(key, lvl);
+  p.file_chantier.push({ batiment: key, niveau_cible: lvl + 1, fin_utj: dur });
+
+  // Recalcule la production si bâtiment de prod (anticipation visuelle)
+  // (la vraie prod sera mise à jour quand le tick résoudra)
+
+  // Ajoute aux ordres exportables
+  state.ordres.push({
+    type: 'chantier',
+    planete: p.nom,
+    batiment: key,
+    niveau_cible: lvl + 1,
+    cost,
+    duree_utj: dur,
+  });
+
+  toast(`✓ ${RULES.batiments[key].label} → ${lvl + 1} mis en file (${dur} UTJ)`);
+  render();
+}
+
+function queueResearch(key) {
+  if (state.file_recherche.find(r => r.technologie === key)) {
+    toast('Recherche déjà en cours', 'warning');
+    return;
+  }
+  const lvl = state.recherche[key] || 0;
+  const cost = researchCost(key, lvl);
+  const payer = findPayingPlanet(cost);
+  if (!payer) {
+    toast(`Aucune planète ne peut payer ${RULES.recherches[key].label}`, 'error');
+    return;
+  }
+  for (const [k, v] of Object.entries(cost)) payer.ressources[k].stock -= v;
+  const dur = researchDuration(key, lvl);
+  state.file_recherche.push({ technologie: key, niveau_cible: lvl + 1, fin_utj: dur });
+
+  state.ordres.push({
+    type: 'recherche',
+    technologie: key,
+    niveau_cible: lvl + 1,
+    cost,
+    duree_utj: dur,
+    paye_par: payer.nom,
+  });
+
+  toast(`✓ ${RULES.recherches[key].label} → ${lvl + 1} en file (${dur} UTJ · ${payer.nom})`);
+  render();
+}
+
+function cancelOrder(i) {
+  const o = state.ordres[i];
+  if (!o) return;
+
+  if (o.type === 'chantier') {
+    const p = state.planetes.find(pl => pl.nom === o.planete);
+    if (p) {
+      // Rembourse, retire de la file
+      for (const [k, v] of Object.entries(o.cost)) p.ressources[k].stock += v;
+      const idx = p.file_chantier.findIndex(c => c.batiment === o.batiment && c.niveau_cible === o.niveau_cible);
+      if (idx >= 0) p.file_chantier.splice(idx, 1);
+    }
+  } else if (o.type === 'recherche') {
+    const payer = state.planetes.find(p => p.nom === o.paye_par);
+    if (payer) for (const [k, v] of Object.entries(o.cost)) payer.ressources[k].stock += v;
+    const idx = state.file_recherche.findIndex(r => r.technologie === o.technologie);
+    if (idx >= 0) state.file_recherche.splice(idx, 1);
+  }
+
+  state.ordres.splice(i, 1);
+  toast('Ordre annulé · ressources remboursées');
+  render();
+}
+
+// ─── SIMULATION D'UN TICK ───
+function simulateTick() {
+  const utj = RULES.duree_utj_par_tick;
+  let events = [];
+
+  // 1. Production
+  for (const p of state.planetes) {
+    for (const r of Object.values(p.ressources)) {
+      r.stock = Math.min(r.stock + r.production_par_utj * utj, r.capacite);
+    }
+  }
+
+  // 2. Files
+  for (const p of state.planetes) {
+    if (p.file_chantier.length > 0) {
+      p.file_chantier[0].fin_utj -= utj;
+      if (p.file_chantier[0].fin_utj <= 0) {
+        const done = p.file_chantier.shift();
+        p.batiments[done.batiment] = done.niveau_cible;
+        events.push(`✓ ${p.nom}: ${RULES.batiments[done.batiment].label} → ${done.niveau_cible}`);
+        // Améliore la production si c'est un bâtiment économique
+        const def = RULES.batiments[done.batiment];
+        if (def.res) {
+          p.ressources[def.res].production_par_utj = Math.floor(def.prod_base * done.niveau_cible * Math.pow(1.1, done.niveau_cible));
+        }
+      }
+    }
+  }
+  if (state.file_recherche.length > 0) {
+    state.file_recherche[0].fin_utj -= utj;
+    if (state.file_recherche[0].fin_utj <= 0) {
+      const done = state.file_recherche.shift();
+      state.recherche[done.technologie] = done.niveau_cible;
+      events.push(`✓ Recherche ${RULES.recherches[done.technologie].label} → ${done.niveau_cible}`);
+    }
+  }
+
+  // 3. Tick++ et nouveau commit
+  state.manifest.tick++;
+  const newHash = Math.floor(Math.random() * 0xffffff).toString(16).padStart(7, '0');
+  state.commits.unshift({
+    hash: newHash,
+    msg: `tick ${state.manifest.tick}: ${state.ordres.length} ordres, 0 batailles`,
+    author: 'engine',
+    isEngine: true,
+    tick: state.manifest.tick,
+  });
+  // Les ordres ont été appliqués au tick courant, on les vide
+  state.ordres = [];
+
+  if (events.length > 0) {
+    toast(`Tick ${state.manifest.tick} résolu · ${events.length} événement(s)`);
+    console.log('Events:', events);
+  } else {
+    toast(`Tick ${state.manifest.tick} résolu (production)`);
+  }
+  render();
+}
+
+// ─── RECHERCHE ───
+function renderResearch() {
+  const grid = $('#researchGrid');
+  const inProgress = new Set(state.file_recherche.map(r => r.technologie));
+  grid.innerHTML = Object.keys(RULES.recherches).map(key => {
+    const def = RULES.recherches[key];
+    const lvl = state.recherche[key] || 0;
+    const cost = researchCost(key, lvl);
+    const payer = findPayingPlanet(cost);
+    const queued = inProgress.has(key);
+    return `
+      <div class="research-card ${queued ? 'queued' : ''} ${!payer && !queued ? 'unaffordable' : ''}" data-research="${key}">
+        <div class="name">${def.label}</div>
+        <div class="lvl">${lvl}${queued ? '' : `<span class="next">→ ${lvl + 1}</span>`}</div>
+        <div class="cost">${queued ? `en cours · ${state.file_recherche[0].fin_utj} UTJ` : Object.entries(cost).map(([k,v]) => `${fmt(v)} ${k.slice(0,1)}`).join(' · ')}</div>
+      </div>`;
+  }).join('');
+  grid.querySelectorAll('[data-research]').forEach(el => {
+    el.onclick = () => queueResearch(el.dataset.research);
+  });
+
+  // Indique le budget global
+  const totalRes = state.planetes.reduce((acc, p) => {
+    for (const [k, v] of Object.entries(p.ressources)) acc[k] = (acc[k] || 0) + v.stock;
+    return acc;
+  }, {});
+  $('#researchBudget').innerHTML = ` · Budget total empire : <span class="orange mono">${fmt(totalRes.ferrum||0)}</span> fer · <span class="cyan mono">${fmt(totalRes.lumen||0)}</span> lum · <span class="mono" style="color:var(--violet)">${fmt(totalRes.plasmide||0)}</span> pla`;
+  $('#navResearch').textContent = `${Object.keys(state.recherche).length} tech`;
+}
+
+// ─── FLOTTE ───
+function renderFleet() {
+  const p = state.planetes[currentPlanetIdx];
+  $('#fleetPlanetName').textContent = p.nom;
+  const grid = $('#fleetGrid');
+  grid.innerHTML = Object.keys(RULES.vaisseaux).map(key => {
+    const def = RULES.vaisseaux[key];
+    const n = p.flotte_au_sol[key] || 0;
+    return `
+      <div class="fleet-card">
+        <div class="name">${def.label}</div>
+        <div class="count">${fmt(n)}</div>
+        <div class="stats">atk ${def.attaque} · coque ${def.coque} · bcl ${def.bouclier}</div>
+      </div>`;
+  }).join('');
+  const totalShips = Object.values(p.flotte_au_sol).reduce((a, b) => a + b, 0);
+  $('#navFleet').textContent = `${fmt(totalShips)} ships`;
+}
+
+// ─── INSPECTOR ───
+function renderInspector() {
+  const p = state.planetes[currentPlanetIdx];
+
+  // YAML view (pretty)
+  const yaml = `<span class="comment"># Généré par l'engine — lecture seule.</span>
+<span class="key">version</span>: <span class="num">1</span>
+<span class="key">joueur</span>: <span class="str">kael</span>
+<span class="key">tick</span>: <span class="num">${state.manifest.tick}</span>
+<span class="key">alliance</span>: <span class="str">aura</span>
+
+<span class="key">planete</span>: <span class="comment"># [${currentPlanetIdx}] de 3</span>
+  <span class="key">nom</span>: <span class="str">${p.nom}</span>
+  <span class="key">coordonnees</span>: [<span class="num">${p.coordonnees.join('</span>, <span class="num">')}</span>]
+  <span class="key">type</span>: <span class="str">${p.type}</span>
+  <span class="key">ressources</span>:
+    <span class="key">ferrum</span>:
+      <span class="key">stock</span>: <span class="num">${Math.floor(p.ressources.ferrum.stock)}</span>
+      <span class="key">production_par_utj</span>: <span class="num">${p.ressources.ferrum.production_par_utj}</span>
+    <span class="key">lumen</span>:
+      <span class="key">stock</span>: <span class="num">${Math.floor(p.ressources.lumen.stock)}</span>
+      <span class="key">production_par_utj</span>: <span class="num">${p.ressources.lumen.production_par_utj}</span>
+    <span class="key">plasmide</span>:
+      <span class="key">stock</span>: <span class="num">${Math.floor(p.ressources.plasmide.stock)}</span>
+  <span class="key">batiments</span>:
+${Object.entries(p.batiments).map(([k,v]) => `    <span class="key">${k}</span>: <span class="num">${v}</span>`).join('\n')}
+  <span class="key">file_chantier</span>:${p.file_chantier.length === 0 ? ' []' : '\n' + p.file_chantier.map(c => `    <span class="dash">-</span> <span class="key">batiment</span>: <span class="str">${c.batiment}</span>\n      <span class="key">niveau_cible</span>: <span class="num">${c.niveau_cible}</span>\n      <span class="key">fin_utj</span>: <span class="num">${c.fin_utj}</span>`).join('\n')}
+  <span class="key">flotte_au_sol</span>:
+${Object.entries(p.flotte_au_sol).filter(([,n]) => n > 0).map(([k,v]) => `    <span class="key">${k}</span>: <span class="num">${v}</span>`).join('\n')}`;
+
+  $('#yamlView').innerHTML = yaml;
+  $('#iTick').textContent = state.manifest.tick;
+
+  // Orders view
+  const ordersYaml = state.ordres.length === 0
+    ? `<span class="comment"># Aucun ordre. Clique sur un bâtiment</span>\n<span class="comment"># ou une recherche pour préparer ton tour.</span>`
+    : `<span class="key">version</span>: <span class="num">1</span>
+<span class="key">joueur</span>: <span class="str">kael</span>
+<span class="key">tick_cible</span>: <span class="num">${state.manifest.tick + 1}</span>
+<span class="key">nonce</span>: <span class="str">${Math.random().toString(16).slice(2, 8)}</span>
+
+<span class="key">ordres</span>:
+${state.ordres.map(o => {
+  if (o.type === 'chantier') return `  <span class="dash">-</span> <span class="key">type</span>: <span class="str">chantier</span>
+    <span class="key">planete</span>: <span class="str">${o.planete}</span>
+    <span class="key">batiment</span>: <span class="str">${o.batiment}</span>
+    <span class="key">niveau_cible</span>: <span class="num">${o.niveau_cible}</span>`;
+  if (o.type === 'recherche') return `  <span class="dash">-</span> <span class="key">type</span>: <span class="str">recherche</span>
+    <span class="key">technologie</span>: <span class="str">${o.technologie}</span>
+    <span class="key">niveau_cible</span>: <span class="num">${o.niveau_cible}</span>`;
+  return '';
+}).join('\n')}
+
+<span class="key">signature</span>: <span class="str">ed25519:&lt;à signer&gt;</span>`;
+  $('#ordersView').innerHTML = ordersYaml;
+  $('#iOrderTick').textContent = state.manifest.tick + 1;
+  $('#iOrderCount').textContent = state.ordres.length;
+
+  // Commits
+  $('#commitLog').innerHTML = state.commits.slice(0, 12).map(c => `
+    <div class="commit ${c.isEngine ? 'engine' : ''}">
+      <span class="hash">${c.hash}</span>
+      <span class="msg">${c.isEngine && c.tick ? `<span class="tick-tag">${c.tick}</span>` : ''}${c.msg.replace(/^tick \d+: /, '')}</span>
+      <span class="author">${c.author}</span>
+    </div>`).join('');
+
+  $('#tickNum').textContent = String(state.manifest.tick).padStart(4, '0');
+  $('#statusHash').textContent = `tick ${state.manifest.tick} · seed ${state.manifest.seed}`;
+}
+
+function render() {
+  renderPlanetList();
+  renderPlanet();
+  renderResearch();
+  renderFleet();
+  renderInspector();
+}
+
+// ─── EXPORT ORDRES ───
+function exportOrdersYaml() {
+  if (state.ordres.length === 0) {
+    toast('Aucun ordre à exporter', 'warning');
+    return;
+  }
+  const nonce = Math.random().toString(16).slice(2, 8);
+  let yaml = `# Ordres pour le tick ${state.manifest.tick + 1}\n# Généré depuis la console Aetheris (bac à sable)\n# À signer avec : node engine/sign.mjs joueurs/kael/ordres.yaml\n\n`;
+  yaml += `version: 1\njoueur: kael\ntick_cible: ${state.manifest.tick + 1}\nnonce: ${nonce}\n\nordres:\n`;
+  for (const o of state.ordres) {
+    if (o.type === 'chantier') {
+      yaml += `  - type: chantier\n    planete: ${o.planete}\n    batiment: ${o.batiment}\n    niveau_cible: ${o.niveau_cible}\n`;
+    } else if (o.type === 'recherche') {
+      yaml += `  - type: recherche\n    technologie: ${o.technologie}\n    niveau_cible: ${o.niveau_cible}\n`;
+    }
+  }
+  yaml += `\nsignature: ed25519:<à signer avec ta clé privée>\n`;
+
+  // Téléchargement
+  const blob = new Blob([yaml], { type: 'text/yaml' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `ordres-tick-${state.manifest.tick + 1}.yaml`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast(`✓ ordres-tick-${state.manifest.tick + 1}.yaml téléchargé`);
+}
+
+// ─── EVENTS ───
+$$('.nav-item').forEach(item => {
+  item.addEventListener('click', () => {
+    const v = item.dataset.view;
+    if (!v) return;
+    $$('.nav-item').forEach(n => n.classList.remove('active'));
+    $$('.view').forEach(view => view.classList.remove('active'));
+    item.classList.add('active');
+    $(`.view[data-view="${v}"]`).classList.add('active');
+  });
+});
+
+$$('.inspector-tab').forEach(t => {
+  t.addEventListener('click', () => {
+    $$('.inspector-tab').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    const tab = t.dataset.tab;
+    $('#inspectorYaml').style.display = tab === 'yaml' ? '' : 'none';
+    $('#inspectorOrders').style.display = tab === 'orders' ? '' : 'none';
+    $('#inspectorCommits').style.display = tab === 'commits' ? '' : 'none';
+  });
+});
+
+$('#btnSimTick').onclick = simulateTick;
+$('#btnExportOrders').onclick = exportOrdersYaml;
+
+// Tick countdown (cosmétique)
+let secs = 15 * 60;
+setInterval(() => {
+  secs--;
+  if (secs < 0) { secs = 15 * 60; }
+  const m = String(Math.floor(secs / 60)).padStart(2, '0');
+  const s = String(secs % 60).padStart(2, '0');
+  $('#tickCountdown').textContent = `${m}:${s}`;
+  document.querySelector('.tick-progress').style.setProperty('--tick-pct', (100 - (secs / (15 * 60)) * 100) + '%');
+}, 1000);
+
+// Initial render
+render();
+</script>
+</body>
+</html>

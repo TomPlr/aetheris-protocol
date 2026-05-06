@@ -1,0 +1,40 @@
+name: aetheris-tick
+
+# Avance d'un tick toutes les 15 minutes.
+# Tout le monde peut auditer ce workflow ; le résolveur étant déterministe,
+# n'importe qui peut le rejouer localement et vérifier que le résultat coïncide.
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}   # déclenchement manuel autorisé (admins serveur uniquement)
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Résoudre le tick
+        run: node engine/tick.mjs --apply
+
+      - name: Commit & push
+        run: |
+          git config user.name "aetheris-engine"
+          git config user.email "engine@aetheris.local"
+          TICK=$(grep '^tick:' world/manifest.yaml | awk '{print $2}')
+          if ! git diff --quiet; then
+            git add -A
+            git commit -m "tick $TICK"
+            git push
+          else
+            echo "Aucun changement — tick vide."
+          fi

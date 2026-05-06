@@ -1,0 +1,1861 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>AETHERIS // PROTOCOL — Console</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-0: #06080d;
+  --bg-1: #0b1018;
+  --bg-2: #11171f;
+  --bg-3: #1a212c;
+  --line: #1f2731;
+  --line-bright: #2c3845;
+  --text: #d8e1ec;
+  --text-dim: #7d8a9c;
+  --text-mute: #4a5566;
+  --cyan: #5ce1e6;
+  --cyan-dim: #2a8a8e;
+  --orange: #ff9b50;
+  --orange-dim: #b86a2c;
+  --red: #ff5a5a;
+  --green: #5cdd9b;
+  --violet: #b78cff;
+  --gold: #ffd56a;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; }
+body {
+  background: var(--bg-0);
+  color: var(--text);
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow: hidden;
+  background-image:
+    radial-gradient(ellipse at 20% 0%, rgba(92, 225, 230, 0.06), transparent 50%),
+    radial-gradient(ellipse at 80% 100%, rgba(255, 155, 80, 0.05), transparent 50%);
+}
+
+/* ═══ Étoiles de fond ═══ */
+.stars {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    radial-gradient(1px 1px at 13% 22%, #fff, transparent),
+    radial-gradient(1px 1px at 38% 71%, #cce, transparent),
+    radial-gradient(1px 1px at 67% 14%, #fff, transparent),
+    radial-gradient(1px 1px at 84% 47%, #aaf, transparent),
+    radial-gradient(1px 1px at 91% 82%, #fff, transparent),
+    radial-gradient(1px 1px at 7% 89%, #cce, transparent),
+    radial-gradient(1px 1px at 53% 38%, #fff, transparent),
+    radial-gradient(1px 1px at 24% 56%, #fff, transparent),
+    radial-gradient(2px 2px at 71% 91%, var(--cyan), transparent),
+    radial-gradient(2px 2px at 17% 12%, var(--orange), transparent);
+  opacity: 0.6;
+}
+
+/* ═══ Layout app ═══ */
+.app {
+  position: relative; z-index: 1;
+  display: grid;
+  grid-template-columns: 240px 1fr 320px;
+  grid-template-rows: 56px 1fr 28px;
+  height: 100vh;
+}
+
+/* ─── Topbar ─── */
+.topbar {
+  grid-column: 1 / -1;
+  display: flex; align-items: center;
+  padding: 0 18px;
+  background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+  border-bottom: 1px solid var(--line);
+  gap: 18px;
+}
+.brand {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  font-size: 13px;
+  display: flex; align-items: center; gap: 10px;
+}
+.brand .glyph {
+  width: 22px; height: 22px;
+  border: 1px solid var(--cyan);
+  border-radius: 50%;
+  position: relative;
+  box-shadow: 0 0 12px rgba(92, 225, 230, 0.3) inset, 0 0 8px rgba(92, 225, 230, 0.4);
+}
+.brand .glyph::after {
+  content: ''; position: absolute; inset: 4px;
+  background: var(--cyan); border-radius: 50%;
+  box-shadow: 0 0 6px var(--cyan);
+}
+.brand .slash { color: var(--text-mute); }
+.brand .protocol { color: var(--cyan); }
+
+.tick-info {
+  display: flex; gap: 22px; align-items: center;
+  font-family: 'JetBrains Mono', monospace; font-size: 12px;
+  margin-left: auto;
+}
+.tick-info .item { display: flex; flex-direction: column; gap: 2px; }
+.tick-info .label { color: var(--text-mute); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; }
+.tick-info .value { color: var(--text); }
+.tick-info .value.cyan { color: var(--cyan); }
+.tick-info .value.orange { color: var(--orange); }
+
+.tick-progress {
+  width: 90px; height: 4px;
+  background: var(--bg-3); border-radius: 2px; overflow: hidden;
+  position: relative;
+}
+.tick-progress::after {
+  content: ''; position: absolute; inset: 0;
+  width: var(--tick-pct, 45%);
+  background: linear-gradient(90deg, var(--cyan-dim), var(--cyan));
+  box-shadow: 0 0 8px var(--cyan);
+}
+
+.player-pill {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 12px;
+  background: var(--bg-3);
+  border: 1px solid var(--line-bright);
+  border-radius: 999px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+}
+.player-pill .dot { width: 6px; height: 6px; background: var(--green); border-radius: 50%; box-shadow: 0 0 6px var(--green); }
+.player-pill .name { color: var(--text); }
+.player-pill .alliance { color: var(--cyan); }
+
+/* ─── Sidebar ─── */
+.sidebar {
+  background: var(--bg-1);
+  border-right: 1px solid var(--line);
+  overflow-y: auto;
+  padding: 16px 0;
+}
+.nav-section {
+  padding: 0 14px 14px;
+}
+.nav-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-mute);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 8px 6px;
+  display: flex; justify-content: space-between;
+}
+.nav-title .count { color: var(--cyan-dim); }
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-dim);
+  border: 1px solid transparent;
+  margin-bottom: 2px;
+}
+.nav-item:hover { background: var(--bg-2); color: var(--text); }
+.nav-item.active {
+  background: var(--bg-2);
+  border-color: var(--line-bright);
+  color: var(--text);
+  position: relative;
+}
+.nav-item.active::before {
+  content: ''; position: absolute; left: -1px; top: 6px; bottom: 6px; width: 2px;
+  background: var(--cyan); box-shadow: 0 0 6px var(--cyan);
+}
+.nav-item .icon {
+  width: 16px; height: 16px; flex-shrink: 0;
+  color: var(--text-mute);
+}
+.nav-item.active .icon { color: var(--cyan); }
+.nav-item .label { flex: 1; }
+.nav-item .meta { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-mute); }
+
+/* Plan tree */
+.tree-item {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px 4px 28px;
+  color: var(--text-dim);
+  cursor: pointer;
+  display: flex; align-items: center; gap: 6px;
+}
+.tree-item:hover { color: var(--text); background: var(--bg-2); }
+.tree-item .file-icon { color: var(--cyan-dim); width: 10px; }
+.tree-item.dir { color: var(--text-mute); padding-left: 18px; }
+.tree-item.dir::before { content: '▾'; margin-right: 4px; font-size: 9px; }
+
+/* ─── Main canvas ─── */
+.main {
+  background: var(--bg-0);
+  overflow-y: auto;
+  position: relative;
+}
+
+.view-header {
+  padding: 18px 28px 14px;
+  border-bottom: 1px solid var(--line);
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: 24px;
+}
+.view-title {
+  display: flex; flex-direction: column; gap: 4px;
+}
+.view-breadcrumb {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-mute);
+  letter-spacing: 0.05em;
+}
+.view-breadcrumb .sep { color: var(--line-bright); margin: 0 6px; }
+.view-breadcrumb .file { color: var(--cyan); }
+.view-h1 {
+  font-size: 24px; font-weight: 600;
+  margin: 0; letter-spacing: -0.01em;
+}
+.view-h1 .id-mono {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--text-mute);
+  margin-left: 10px;
+}
+.view-actions { display: flex; gap: 8px; }
+
+.btn {
+  font-family: inherit; font-size: 12px;
+  padding: 7px 14px;
+  background: var(--bg-2);
+  color: var(--text);
+  border: 1px solid var(--line-bright);
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.btn:hover { background: var(--bg-3); border-color: var(--cyan-dim); }
+.btn.primary {
+  background: var(--cyan-dim); color: var(--bg-0); border-color: var(--cyan);
+  font-weight: 600;
+}
+.btn.primary:hover { background: var(--cyan); }
+.btn.danger { color: var(--red); border-color: rgba(255, 90, 90, 0.3); }
+.btn.danger:hover { background: rgba(255, 90, 90, 0.1); }
+.btn.ghost { background: transparent; }
+.btn .icon { width: 12px; height: 12px; }
+
+/* ─── View body ─── */
+.view-body { padding: 22px 28px; }
+
+/* === Panneau planète === */
+.planet-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 22px;
+}
+
+/* Visuel planète */
+.planet-visual {
+  position: relative;
+  background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 28px;
+  min-height: 380px;
+  overflow: hidden;
+}
+.planet-visual::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(circle at 30% 40%, rgba(92, 225, 230, 0.08), transparent 60%);
+  pointer-events: none;
+}
+.planet-orb {
+  width: 220px; height: 220px;
+  margin: 8px auto 16px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 30%, #f4b07a, #c4631a 40%, #5a280a 80%, #2a1404);
+  box-shadow:
+    inset -30px -30px 60px rgba(0,0,0,0.6),
+    0 0 80px rgba(255, 155, 80, 0.25),
+    0 0 0 1px rgba(255,155,80,0.2);
+  position: relative;
+}
+.planet-orb::after {
+  content: ''; position: absolute;
+  inset: -28px;
+  border-radius: 50%;
+  border: 1px dashed rgba(92, 225, 230, 0.25);
+  animation: orbit 80s linear infinite;
+}
+@keyframes orbit { to { transform: rotate(360deg); } }
+
+.planet-meta {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 12px; margin-top: 18px;
+  position: relative;
+}
+.planet-meta .cell {
+  padding: 10px 12px;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+.planet-meta .cell .l {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; color: var(--text-mute);
+  text-transform: uppercase; letter-spacing: 0.1em;
+  margin-bottom: 4px;
+}
+.planet-meta .cell .v { font-size: 14px; font-weight: 600; }
+.planet-meta .cell .v.cyan { color: var(--cyan); }
+.planet-meta .cell .v.orange { color: var(--orange); }
+
+/* Ressources */
+.resources {
+  display: flex; flex-direction: column; gap: 10px;
+}
+.res-row {
+  background: var(--bg-2); border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 12px 14px;
+  position: relative;
+}
+.res-row .top {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 6px;
+}
+.res-row .name {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.res-row .val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 16px; font-weight: 700;
+}
+.res-row .val .delta {
+  font-size: 10px; color: var(--green); margin-left: 6px;
+}
+.res-row .bar {
+  height: 4px; background: var(--bg-3); border-radius: 2px; overflow: hidden;
+}
+.res-row .bar > div {
+  height: 100%; transition: width .3s;
+}
+.res-row.ferrum   .val { color: var(--orange); }
+.res-row.ferrum   .bar > div { background: linear-gradient(90deg, var(--orange-dim), var(--orange)); }
+.res-row.lumen    .val { color: var(--cyan); }
+.res-row.lumen    .bar > div { background: linear-gradient(90deg, var(--cyan-dim), var(--cyan)); }
+.res-row.plasmide .val { color: var(--violet); }
+.res-row.plasmide .bar > div { background: linear-gradient(90deg, #5a3d8c, var(--violet)); }
+.res-row .bottom {
+  display: flex; justify-content: space-between;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; color: var(--text-mute); margin-top: 4px;
+}
+
+/* Bâtiments */
+.section-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+  margin: 22px 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.section-title .right { font-size: 10px; color: var(--cyan-dim); }
+
+.buildings {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px;
+}
+.building {
+  background: var(--bg-2); border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 10px 12px;
+  cursor: pointer;
+  position: relative;
+}
+.building:hover { border-color: var(--line-bright); }
+.building.queued { border-color: var(--orange-dim); background: linear-gradient(180deg, var(--bg-2), rgba(255, 155, 80, 0.05)); }
+.building.queued::after {
+  content: ''; position: absolute; inset: 0; border-radius: 4px;
+  border: 1px solid var(--orange);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100% { opacity: 0.4; } 50% { opacity: 1; } }
+.building .name { font-size: 11px; color: var(--text-dim); }
+.building .lvl {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 18px; font-weight: 700;
+  color: var(--text);
+  display: flex; align-items: baseline; gap: 6px;
+}
+.building .lvl .next {
+  font-size: 11px; color: var(--orange); font-weight: 500;
+}
+.building .progress {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
+  background: var(--line);
+}
+.building .progress > div {
+  height: 100%; background: var(--orange);
+  width: var(--p, 30%);
+}
+
+/* Order queue (dossier ordres.yaml) */
+.order-queue {
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.order-queue .head {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-2);
+}
+.order-queue .head .title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+}
+.order-queue .head .file {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  color: var(--cyan-dim);
+}
+.order-row {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  display: flex; gap: 14px; align-items: center;
+}
+.order-row:last-child { border-bottom: none; }
+.order-row .badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  padding: 3px 7px;
+  border-radius: 3px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.badge.chantier  { background: rgba(255, 155, 80, 0.15); color: var(--orange); }
+.badge.recherche { background: rgba(183, 140, 255, 0.15); color: var(--violet); }
+.badge.transport { background: rgba(92, 225, 230, 0.15); color: var(--cyan); }
+.badge.attaque   { background: rgba(255, 90, 90, 0.15); color: var(--red); }
+.badge.scelle    { background: rgba(255, 213, 106, 0.15); color: var(--gold); }
+.order-row .desc { flex: 1; font-size: 13px; color: var(--text); }
+.order-row .desc .mono { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-dim); }
+.order-row .when {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; color: var(--text-mute); white-space: nowrap;
+}
+
+/* ─── Inspector (right panel) ─── */
+.inspector {
+  background: var(--bg-1);
+  border-left: 1px solid var(--line);
+  overflow-y: auto;
+}
+.inspector-tabs {
+  display: flex; border-bottom: 1px solid var(--line);
+  background: var(--bg-2);
+}
+.inspector-tab {
+  flex: 1; padding: 10px; text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: var(--text-mute);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+.inspector-tab.active { color: var(--cyan); border-bottom-color: var(--cyan); }
+.inspector-body { padding: 14px; }
+
+.yaml-view {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  line-height: 1.6;
+  background: var(--bg-0);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 12px;
+  white-space: pre-wrap;
+  color: var(--text-dim);
+  max-height: 320px;
+  overflow-y: auto;
+}
+.yaml-view .key { color: var(--cyan); }
+.yaml-view .str { color: var(--orange); }
+.yaml-view .num { color: var(--violet); }
+.yaml-view .comment { color: var(--text-mute); }
+.yaml-view .dash { color: var(--text-mute); }
+
+.kv-list {
+  display: flex; flex-direction: column; gap: 6px;
+}
+.kv {
+  display: flex; justify-content: space-between;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 0;
+  border-bottom: 1px dashed var(--line);
+}
+.kv .k { color: var(--text-mute); }
+.kv .v { color: var(--text); }
+
+/* ─── Status bar ─── */
+.statusbar {
+  grid-column: 1 / -1;
+  background: var(--bg-2);
+  border-top: 1px solid var(--line);
+  padding: 0 14px;
+  display: flex; align-items: center; gap: 18px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-mute);
+  letter-spacing: 0.05em;
+}
+.statusbar .item { display: flex; align-items: center; gap: 6px; }
+.statusbar .dot { width: 6px; height: 6px; border-radius: 50%; }
+.statusbar .dot.green { background: var(--green); box-shadow: 0 0 4px var(--green); }
+.statusbar .dot.cyan { background: var(--cyan); box-shadow: 0 0 4px var(--cyan); }
+.statusbar .right { margin-left: auto; }
+
+/* === Vue galaxie === */
+.galaxy-canvas {
+  position: relative;
+  height: 600px;
+  background: radial-gradient(ellipse at center, #0a1420 0%, #020407 80%);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.galaxy-canvas svg { width: 100%; height: 100%; display: block; }
+.galaxy-bg-stars {
+  position: absolute; inset: 0;
+  background-image:
+    radial-gradient(1.5px 1.5px at 12% 18%, #fff, transparent),
+    radial-gradient(1px 1px at 31% 67%, #cce, transparent),
+    radial-gradient(1px 1px at 49% 22%, #fff, transparent),
+    radial-gradient(2px 2px at 64% 81%, var(--cyan), transparent),
+    radial-gradient(1px 1px at 78% 38%, #fff, transparent),
+    radial-gradient(1.5px 1.5px at 88% 65%, #aaf, transparent),
+    radial-gradient(1px 1px at 5% 91%, #fff, transparent),
+    radial-gradient(1px 1px at 22% 4%, #fff, transparent);
+  opacity: 0.5;
+}
+.system-bar {
+  display: flex;
+  gap: 6px;
+  padding: 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  margin-bottom: 12px;
+  align-items: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+}
+.system-bar .label { color: var(--text-mute); }
+.coord-input {
+  background: var(--bg-0); border: 1px solid var(--line-bright);
+  color: var(--cyan); padding: 4px 8px; border-radius: 3px;
+  font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  width: 50px; text-align: center;
+}
+.coord-input:focus { outline: 1px solid var(--cyan); }
+
+/* Combat report */
+.combat-grid {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 18px;
+  align-items: stretch;
+}
+.combat-side {
+  background: var(--bg-2); border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 16px;
+}
+.combat-side.attacker { border-color: rgba(92, 225, 230, 0.3); }
+.combat-side.defender { border-color: rgba(255, 90, 90, 0.3); }
+.combat-side .h {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+  margin-bottom: 8px;
+  display: flex; justify-content: space-between;
+}
+.combat-side .player {
+  font-size: 18px; font-weight: 600;
+  margin-bottom: 14px;
+}
+.combat-side.attacker .player { color: var(--cyan); }
+.combat-side.defender .player { color: var(--red); }
+.fleet-line {
+  display: flex; justify-content: space-between;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  padding: 5px 0;
+  border-bottom: 1px dashed var(--line);
+}
+.fleet-line .ship { color: var(--text-dim); }
+.fleet-line .count { color: var(--text); }
+.fleet-line .lost { color: var(--red); margin-left: 8px; font-size: 10px; }
+
+.vs {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px;
+}
+.vs .ring {
+  width: 60px; height: 60px;
+  border: 1px solid var(--orange);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  color: var(--orange);
+  position: relative;
+  box-shadow: 0 0 24px rgba(255, 155, 80, 0.3);
+}
+.vs .label {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  letter-spacing: 0.15em; color: var(--text-mute);
+}
+.rounds {
+  display: grid; grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+  margin: 16px 0;
+}
+.round {
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  padding: 8px 6px; text-align: center;
+  border-radius: 3px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+}
+.round .n { color: var(--text-mute); }
+.round .dmg { color: var(--text); font-weight: 700; font-size: 13px; }
+.round.adv-a { border-left: 2px solid var(--cyan); }
+.round.adv-d { border-left: 2px solid var(--red); }
+
+.outcome {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+  margin-top: 16px;
+}
+.outcome .cell {
+  background: var(--bg-2); border: 1px solid var(--line);
+  border-radius: 4px; padding: 12px;
+}
+.outcome .cell .l {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; color: var(--text-mute);
+  text-transform: uppercase; letter-spacing: 0.1em;
+  margin-bottom: 6px;
+}
+.outcome .cell .v {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 18px; font-weight: 700;
+}
+.outcome .cell.victory .v { color: var(--green); }
+.outcome .cell.debris .v { color: var(--orange); }
+
+/* ═══ Tabs (vues) ═══ */
+.view { display: none; }
+.view.active { display: block; }
+
+/* ═══ Diplomatie / alliance ═══ */
+.alliance-card {
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 22px;
+  margin-bottom: 14px;
+}
+.alliance-card .crest {
+  width: 56px; height: 56px;
+  border: 2px solid var(--cyan);
+  border-radius: 4px;
+  position: relative;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700; color: var(--cyan);
+  font-size: 18px;
+  background: linear-gradient(135deg, rgba(92, 225, 230, 0.15), transparent);
+}
+.alliance-head { display: flex; gap: 16px; align-items: center; margin-bottom: 18px; }
+.alliance-head .info { flex: 1; }
+.alliance-head .info .tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  color: var(--cyan);
+}
+.alliance-head .info h3 { margin: 2px 0 4px; font-size: 22px; }
+.alliance-head .info .motto {
+  font-style: italic; color: var(--text-mute); font-size: 12px;
+}
+
+/* utility */
+.muted { color: var(--text-mute); }
+.cyan { color: var(--cyan); }
+.orange { color: var(--orange); }
+.mono { font-family: 'JetBrains Mono', monospace; }
+
+/* Commit log */
+.commit-log {
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  overflow: hidden;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+}
+.commit {
+  display: grid;
+  grid-template-columns: 90px 1fr 80px;
+  gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+  align-items: center;
+}
+.commit:last-child { border-bottom: none; }
+.commit .hash { color: var(--cyan-dim); }
+.commit .msg { color: var(--text); }
+.commit .author { color: var(--text-mute); text-align: right; font-size: 10px; }
+.commit .msg .tick-tag {
+  background: rgba(92, 225, 230, 0.1);
+  border: 1px solid var(--cyan-dim);
+  color: var(--cyan);
+  padding: 1px 6px; border-radius: 2px;
+  font-size: 9px; margin-right: 6px;
+  letter-spacing: 0.1em;
+}
+.commit.engine .msg::before { content: '⚙ '; color: var(--orange); }
+
+/* Dialog */
+.dialog-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 100;
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(4px);
+}
+.dialog {
+  background: var(--bg-1);
+  border: 1px solid var(--line-bright);
+  border-radius: 8px;
+  width: 480px;
+  max-width: 90vw;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(92, 225, 230, 0.1);
+}
+.dialog .h {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.dialog .h .t {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; letter-spacing: 0.1em; color: var(--cyan);
+}
+.dialog .b { padding: 18px; }
+.dialog .f {
+  padding: 12px 18px;
+  border-top: 1px solid var(--line);
+  display: flex; gap: 8px; justify-content: flex-end;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--bg-1); }
+::-webkit-scrollbar-thumb { background: var(--bg-3); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--line-bright); }
+
+/* Fleet send wizard */
+.wizard-steps {
+  display: flex; gap: 0;
+  margin-bottom: 22px;
+  border-bottom: 1px solid var(--line);
+}
+.wizard-step {
+  flex: 1;
+  padding: 12px 16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-mute);
+  letter-spacing: 0.1em;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+}
+.wizard-step .n {
+  width: 20px; height: 20px;
+  border-radius: 50%; border: 1px solid currentColor;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px;
+}
+.wizard-step.active { color: var(--cyan); border-bottom-color: var(--cyan); }
+.wizard-step.done { color: var(--green); }
+.wizard-step.done .n { background: var(--green); color: var(--bg-0); border-color: var(--green); }
+
+.fleet-builder {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+}
+.ship-row {
+  background: var(--bg-2); border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 10px 14px;
+  display: flex; align-items: center; gap: 10px;
+}
+.ship-row .icon-box {
+  width: 32px; height: 32px;
+  background: var(--bg-3); border-radius: 3px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; color: var(--cyan);
+  flex-shrink: 0;
+}
+.ship-row .info { flex: 1; min-width: 0; }
+.ship-row .name { font-size: 12px; }
+.ship-row .available {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  color: var(--text-mute);
+}
+.ship-row input {
+  width: 64px;
+  background: var(--bg-0); border: 1px solid var(--line-bright);
+  color: var(--text); padding: 5px 8px;
+  border-radius: 3px;
+  font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  text-align: right;
+}
+.ship-row input:focus { outline: 1px solid var(--cyan); }
+
+/* Mission types */
+.mission-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
+.mission-card {
+  background: var(--bg-2); border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 12px;
+  cursor: pointer;
+  text-align: center;
+}
+.mission-card:hover { border-color: var(--line-bright); }
+.mission-card.active { border-color: var(--cyan); background: rgba(92, 225, 230, 0.05); }
+.mission-card .name {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; color: var(--text);
+  letter-spacing: 0.1em;
+}
+.mission-card .desc {
+  font-size: 10px; color: var(--text-mute); margin-top: 4px;
+}
+.mission-card.attaque.active { border-color: var(--red); background: rgba(255, 90, 90, 0.05); }
+.mission-card.attaque.active .name { color: var(--red); }
+
+/* ═══ GDD content ═══ */
+.gdd { max-width: 820px; }
+.gdd p { color: var(--text-dim); margin: 12px 0; }
+.gdd h2 {
+  font-size: 18px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 8px; margin-top: 32px;
+}
+.gdd h3 { font-size: 15px; margin-top: 20px; color: var(--cyan); font-family: 'JetBrains Mono', monospace; letter-spacing: 0.05em; }
+.gdd code {
+  font-family: 'JetBrains Mono', monospace; font-size: 12px;
+  background: var(--bg-2); padding: 1px 6px; border-radius: 3px;
+  color: var(--orange);
+}
+.gdd pre {
+  background: var(--bg-1); border: 1px solid var(--line);
+  border-radius: 4px; padding: 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; line-height: 1.6;
+  color: var(--text-dim);
+  overflow-x: auto;
+}
+.gdd ul { color: var(--text-dim); padding-left: 22px; }
+.gdd li { margin: 4px 0; }
+.gdd hr { border: none; border-top: 1px solid var(--line); margin: 28px 0; }
+.callout {
+  border-left: 3px solid var(--cyan);
+  background: rgba(92, 225, 230, 0.05);
+  padding: 12px 16px;
+  margin: 14px 0;
+  font-size: 13px;
+  border-radius: 0 4px 4px 0;
+}
+.callout.orange { border-left-color: var(--orange); background: rgba(255, 155, 80, 0.05); }
+
+/* Dialog signing */
+.signing-anim {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  background: var(--bg-0);
+  padding: 14px;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  color: var(--green);
+}
+.signing-anim .step { padding: 3px 0; }
+.signing-anim .ok::before { content: '✓ '; }
+.signing-anim .pending { color: var(--text-mute); }
+.signing-anim .pending::before { content: '· '; }
+</style>
+</head>
+<body>
+<div class="stars"></div>
+
+<div class="app">
+  <!-- ═══════════ TOPBAR ═══════════ -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="glyph"></div>
+      <span>AETHERIS</span>
+      <span class="slash">//</span>
+      <span class="protocol">PROTOCOL</span>
+    </div>
+
+    <div class="tick-info">
+      <div class="item">
+        <div class="label">Serveur</div>
+        <div class="value">alpha-7</div>
+      </div>
+      <div class="item">
+        <div class="label">Tick</div>
+        <div class="value cyan">0142</div>
+      </div>
+      <div class="item">
+        <div class="label">Prochain dans</div>
+        <div class="value orange">08:14</div>
+      </div>
+      <div class="tick-progress" style="--tick-pct: 45%"></div>
+      <div class="item">
+        <div class="label">Branche</div>
+        <div class="value">main · sync</div>
+      </div>
+    </div>
+
+    <div class="player-pill">
+      <span class="dot"></span>
+      <span class="name">kael</span>
+      <span class="muted">·</span>
+      <span class="alliance">[AURA]</span>
+    </div>
+  </header>
+
+  <!-- ═══════════ SIDEBAR ═══════════ -->
+  <aside class="sidebar">
+    <div class="nav-section">
+      <div class="nav-title">Navigation <span class="count">6</span></div>
+      <div class="nav-item active" data-view="planet">
+        <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="5"/><ellipse cx="8" cy="8" rx="7" ry="2.5" transform="rotate(-25 8 8)"/></svg>
+        <span class="label">Planète</span>
+        <span class="meta">3</span>
+      </div>
+      <div class="nav-item" data-view="galaxy">
+        <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><circle cx="8" cy="8" r="2" fill="currentColor"/><path d="M2 8 L14 8 M8 2 L8 14"/></svg>
+        <span class="label">Galaxie</span>
+        <span class="meta">1:42</span>
+      </div>
+      <div class="nav-item" data-view="fleet">
+        <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 12 L8 4 L14 12 Z"/><path d="M5 11 L11 11"/></svg>
+        <span class="label">Flottes</span>
+        <span class="meta">0 vol</span>
+      </div>
+      <div class="nav-item" data-view="combat">
+        <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3 L13 13 M13 3 L3 13"/></svg>
+        <span class="label">Rapports</span>
+        <span class="meta">2</span>
+      </div>
+      <div class="nav-item" data-view="alliance">
+        <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="5" cy="6" r="2.5"/><circle cx="11" cy="6" r="2.5"/><path d="M2 14 C2 11 4 10 5 10 C6 10 7 11 8 11 C9 11 10 10 11 10 C12 10 14 11 14 14"/></svg>
+        <span class="label">Alliance</span>
+        <span class="meta">AURA</span>
+      </div>
+      <div class="nav-item" data-view="protocol">
+        <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="2" width="10" height="12" rx="1"/><path d="M5 5 L11 5 M5 8 L11 8 M5 11 L9 11"/></svg>
+        <span class="label">Protocole</span>
+        <span class="meta">v0.1</span>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-title">Mes planètes <span class="count">3 / 9</span></div>
+      <div class="tree-item" style="color: var(--cyan); font-weight: 500;">▸ aetheris-prima <span class="muted">1:42:8</span></div>
+      <div class="tree-item">▸ lumeris <span class="muted">1:42:9</span></div>
+      <div class="tree-item">▸ ferrolune <span class="muted">1:42:10</span></div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-title">Repo <span class="count">git</span></div>
+      <div class="tree-item dir">world</div>
+      <div class="tree-item">manifest.yaml</div>
+      <div class="tree-item">galaxie.yaml</div>
+      <div class="tree-item dir">joueurs/kael</div>
+      <div class="tree-item" style="color: var(--cyan);">empire.yaml</div>
+      <div class="tree-item" style="color: var(--orange);">ordres.yaml *</div>
+      <div class="tree-item" style="color: var(--gold);">ordres-scelles.yaml</div>
+      <div class="tree-item dir">engine</div>
+      <div class="tree-item">tick.mjs</div>
+      <div class="tree-item">PROTOCOL.md</div>
+    </div>
+  </aside>
+
+  <!-- ═══════════ MAIN ═══════════ -->
+  <main class="main">
+
+    <!-- ─── VIEW: PLANET ─── -->
+    <section class="view active" data-view="planet">
+      <div class="view-header">
+        <div class="view-title">
+          <div class="view-breadcrumb">
+            joueurs <span class="sep">/</span> kael <span class="sep">/</span>
+            <span class="file">empire.yaml</span> <span class="sep">→</span>
+            planetes[0]
+          </div>
+          <h1 class="view-h1">aetheris-prima <span class="id-mono">[1:42:8] · tellurique</span></h1>
+        </div>
+        <div class="view-actions">
+          <button class="btn ghost"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2 V14 M2 8 H14"/></svg>Nouveau chantier</button>
+          <button class="btn ghost"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8 H14 M11 5 L14 8 L11 11"/></svg>Envoyer flotte</button>
+          <button class="btn primary" onclick="document.getElementById('signDialog').style.display='flex'">
+            <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8 L7 12 L13 4"/></svg>
+            Signer & push
+          </button>
+        </div>
+      </div>
+
+      <div class="view-body">
+
+        <div class="planet-grid">
+          <!-- Visuel -->
+          <div>
+            <div class="planet-visual">
+              <div class="planet-orb"></div>
+              <div class="planet-meta">
+                <div class="cell"><div class="l">Champs</div><div class="v cyan">24/263</div></div>
+                <div class="cell"><div class="l">Énergie</div><div class="v orange">+2 300</div></div>
+                <div class="cell"><div class="l">Temp.</div><div class="v">−18°C / 92°C</div></div>
+                <div class="cell"><div class="l">Score</div><div class="v">312 500</div></div>
+              </div>
+            </div>
+
+            <div class="section-title">
+              Bâtiments
+              <span class="right">12 actifs · 1 en file</span>
+            </div>
+            <div class="buildings">
+              <div class="building queued">
+                <div class="name">Mine de Ferrum</div>
+                <div class="lvl">24 <span class="next">→ 25</span></div>
+                <div class="progress"><div style="width: 78%"></div></div>
+              </div>
+              <div class="building"><div class="name">Extracteur Lumen</div><div class="lvl">21</div></div>
+              <div class="building"><div class="name">Synthétiseur Plasmide</div><div class="lvl">18</div></div>
+              <div class="building"><div class="name">Centrale solaire</div><div class="lvl">22</div></div>
+              <div class="building"><div class="name">Réacteur fusion</div><div class="lvl">12</div></div>
+              <div class="building"><div class="name">Dépôt</div><div class="lvl">14</div></div>
+              <div class="building"><div class="name">Usine robotique</div><div class="lvl">11</div></div>
+              <div class="building"><div class="name">Chantier spatial</div><div class="lvl">13</div></div>
+              <div class="building"><div class="name">Laboratoire</div><div class="lvl">14</div></div>
+              <div class="building"><div class="name">Silo missiles</div><div class="lvl">6</div></div>
+              <div class="building"><div class="name">Terminal marchand</div><div class="lvl">8</div></div>
+              <div class="building"><div class="name">Centre diplomatique</div><div class="lvl">4</div></div>
+            </div>
+          </div>
+
+          <!-- Ressources + ordres -->
+          <div>
+            <div class="section-title">Ressources <span class="right">prod. cumulée / 6 UTJ</span></div>
+            <div class="resources">
+              <div class="res-row ferrum">
+                <div class="top">
+                  <span class="name">▣ ferrum</span>
+                  <span class="val">2 847 520<span class="delta">+12 480 / tick</span></span>
+                </div>
+                <div class="bar"><div style="width: 57%"></div></div>
+                <div class="bottom"><span>+2 080 / UTJ</span><span>57% / 5 000 000</span></div>
+              </div>
+              <div class="res-row lumen">
+                <div class="top">
+                  <span class="name">◇ lumen</span>
+                  <span class="val">1 204 880<span class="delta">+6 120 / tick</span></span>
+                </div>
+                <div class="bar"><div style="width: 40%"></div></div>
+                <div class="bottom"><span>+1 020 / UTJ</span><span>40% / 3 000 000</span></div>
+              </div>
+              <div class="res-row plasmide">
+                <div class="top">
+                  <span class="name">⬢ plasmide</span>
+                  <span class="val">487 213<span class="delta">+2 820 / tick</span></span>
+                </div>
+                <div class="bar"><div style="width: 24%"></div></div>
+                <div class="bottom"><span>+470 / UTJ</span><span>24% / 2 000 000</span></div>
+              </div>
+            </div>
+
+            <div class="section-title">
+              Tour en cours <span class="right">tick 143</span>
+            </div>
+            <div class="order-queue">
+              <div class="head">
+                <span class="title">ORDRES À SIGNER</span>
+                <span class="file">joueurs/kael/ordres.yaml</span>
+              </div>
+              <div class="order-row">
+                <span class="badge chantier">chantier</span>
+                <div class="desc">
+                  <strong>laboratoire → 13</strong><br/>
+                  <span class="mono">lumeris · coût 38 400 ferrum</span>
+                </div>
+                <span class="when">29 UTJ</span>
+              </div>
+              <div class="order-row">
+                <span class="badge recherche">recherche</span>
+                <div class="desc">
+                  <strong>drive_hyperspatial → 9</strong><br/>
+                  <span class="mono">global · coût 5 120 000 plasmide</span>
+                </div>
+                <span class="when">312 UTJ</span>
+              </div>
+              <div class="order-row">
+                <span class="badge transport">transport</span>
+                <div class="desc">
+                  <strong>aetheris-prima → ferrolune</strong><br/>
+                  <span class="mono">80 cargo · 1.5M fer + 200K lum</span>
+                </div>
+                <span class="when">12 UTJ</span>
+              </div>
+              <div class="order-row">
+                <span class="badge scelle">scellé</span>
+                <div class="desc">
+                  <strong>atk-pyra-ii-001</strong> <span class="muted">(commit-reveal)</span><br/>
+                  <span class="mono">sha256:8f4c…d0e3 · révélation tick 144</span>
+                </div>
+                <span class="when">hashé</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── VIEW: GALAXY ─── -->
+    <section class="view" data-view="galaxy">
+      <div class="view-header">
+        <div class="view-title">
+          <div class="view-breadcrumb">world <span class="sep">/</span> <span class="file">galaxie.yaml</span> <span class="sep">/</span> systemes</div>
+          <h1 class="view-h1">Système Helios <span class="id-mono">1:42 · étoile G · 5 800 K</span></h1>
+        </div>
+        <div class="view-actions">
+          <button class="btn ghost">◂ Précédent</button>
+          <button class="btn ghost">Suivant ▸</button>
+          <button class="btn">Espionner ce système</button>
+        </div>
+      </div>
+      <div class="view-body">
+
+        <div class="system-bar">
+          <span class="label">Coordonnées :</span>
+          <input class="coord-input" value="1" />
+          <span class="muted">:</span>
+          <input class="coord-input" value="42" />
+          <span class="muted">·</span>
+          <span class="label">15 positions · 8 colonisées · 4 alliances</span>
+          <span style="margin-left: auto;" class="muted">Source : world/galaxie.yaml @ tick 142</span>
+        </div>
+
+        <div class="galaxy-canvas">
+          <div class="galaxy-bg-stars"></div>
+          <svg viewBox="0 0 1500 600" preserveAspectRatio="xMidYMid meet">
+            <!-- étoile centrale -->
+            <defs>
+              <radialGradient id="sun" cx="50%" cy="50%">
+                <stop offset="0%" stop-color="#fff8c0" stop-opacity="1"/>
+                <stop offset="40%" stop-color="#ffd56a" stop-opacity="0.8"/>
+                <stop offset="100%" stop-color="#ff9b50" stop-opacity="0"/>
+              </radialGradient>
+              <filter id="glow"><feGaussianBlur stdDeviation="2"/></filter>
+            </defs>
+
+            <circle cx="60" cy="300" r="80" fill="url(#sun)"/>
+            <circle cx="60" cy="300" r="22" fill="#fff8c0" filter="url(#glow)"/>
+            <text x="60" y="430" fill="#ffd56a" text-anchor="middle" font-family="JetBrains Mono" font-size="14" letter-spacing="2">HELIOS-42</text>
+            <text x="60" y="450" fill="#7d8a9c" text-anchor="middle" font-family="JetBrains Mono" font-size="10">G · 5 800K</text>
+
+            <!-- ligne ecliptique -->
+            <line x1="140" y1="300" x2="1480" y2="300" stroke="#1f2731" stroke-dasharray="2 6"/>
+
+            <!-- positions 1..15 -->
+            <!-- Helper template positions -->
+            <!-- Pos 1: asteroïde -->
+            <g transform="translate(200,300)">
+              <circle r="3" fill="#7d8a9c" opacity="0.6"/><circle cx="6" cy="-4" r="1.5" fill="#7d8a9c"/><circle cx="-5" cy="3" r="1" fill="#7d8a9c"/>
+              <text y="-22" fill="#4a5566" text-anchor="middle" font-family="JetBrains Mono" font-size="9">01</text>
+            </g>
+            <g transform="translate(280,300)">
+              <circle r="2" fill="#7d8a9c" opacity="0.6"/><circle cx="4" cy="2" r="1" fill="#7d8a9c"/>
+              <text y="-22" fill="#4a5566" text-anchor="middle" font-family="JetBrains Mono" font-size="9">02</text>
+            </g>
+
+            <!-- Pos 3: vexor pyra (volcanique) -->
+            <g transform="translate(360,300)">
+              <circle r="13" fill="#a4502a" stroke="#ff5a5a" stroke-width="1.2"/>
+              <circle r="13" fill="url(#pyraGrad)"/>
+              <text y="-22" fill="#ff5a5a" text-anchor="middle" font-family="JetBrains Mono" font-size="9">03 · pyra</text>
+              <text y="32" fill="#ff5a5a" text-anchor="middle" font-family="JetBrains Mono" font-size="9">VEXOR</text>
+            </g>
+            <!-- Pos 4: vexor pyra-ii -->
+            <g transform="translate(440,300)">
+              <circle r="11" fill="#a4502a" stroke="#ff5a5a" stroke-width="1.2"/>
+              <text y="-22" fill="#ff5a5a" text-anchor="middle" font-family="JetBrains Mono" font-size="9">04 · pyra-ii</text>
+              <text y="30" fill="#ff5a5a" text-anchor="middle" font-family="JetBrains Mono" font-size="9">VEXOR</text>
+              <!-- target marker (mon attaque scellée) -->
+              <circle r="22" fill="none" stroke="#ffd56a" stroke-width="1" stroke-dasharray="3 3" opacity="0.8">
+                <animate attributeName="r" values="20;28;20" dur="3s" repeatCount="indefinite"/>
+              </circle>
+            </g>
+
+            <!-- Pos 5: kael forge-de-kael -->
+            <g transform="translate(520,300)">
+              <circle r="10" fill="#3d6b8a" stroke="#5ce1e6" stroke-width="1.2"/>
+              <text y="-22" fill="#5ce1e6" text-anchor="middle" font-family="JetBrains Mono" font-size="9">05 · forge</text>
+              <text y="29" fill="#5ce1e6" text-anchor="middle" font-family="JetBrains Mono" font-size="9">KAEL</text>
+            </g>
+            <g transform="translate(600,300)"><circle r="2" fill="#7d8a9c"/><text y="-22" fill="#4a5566" text-anchor="middle" font-family="JetBrains Mono" font-size="9">06</text></g>
+
+            <!-- Pos 7: ira solis (allié) -->
+            <g transform="translate(680,300)">
+              <circle r="11" fill="#3d6b8a" stroke="#5ce1e6" stroke-width="1.2" stroke-dasharray="2 2"/>
+              <text y="-22" fill="#5ce1e6" text-anchor="middle" font-family="JetBrains Mono" font-size="9">07 · solis</text>
+              <text y="30" fill="#5ce1e6" text-anchor="middle" font-family="JetBrains Mono" font-size="9">IRA</text>
+            </g>
+
+            <!-- Pos 8: kael aetheris-prima — HOME -->
+            <g transform="translate(770,300)">
+              <circle r="18" fill="#3d6b8a" stroke="#5ce1e6" stroke-width="2"/>
+              <circle r="22" fill="none" stroke="#5ce1e6" stroke-width="1" opacity="0.5"/>
+              <circle r="28" fill="none" stroke="#5ce1e6" stroke-width="0.5" stroke-dasharray="3 5" opacity="0.4"/>
+              <text y="-32" fill="#5ce1e6" text-anchor="middle" font-family="JetBrains Mono" font-size="10" font-weight="700">08 · aetheris-prima</text>
+              <text y="42" fill="#5ce1e6" text-anchor="middle" font-family="JetBrains Mono" font-size="10" font-weight="700">★ KAEL ★</text>
+            </g>
+
+            <!-- Pos 9: kael lumeris -->
+            <g transform="translate(870,300)">
+              <circle r="11" fill="#5a8eb6" stroke="#5ce1e6" stroke-width="1.2"/>
+              <text y="-22" fill="#5ce1e6" text-anchor="middle" font-family="JetBrains Mono" font-size="9">09 · lumeris</text>
+              <text y="30" fill="#5ce1e6" text-anchor="middle" font-family="JetBrains Mono" font-size="9">KAEL</text>
+            </g>
+
+            <!-- Pos 10: kael ferrolune -->
+            <g transform="translate(960,300)">
+              <circle r="10" fill="#7da6c8" stroke="#5ce1e6" stroke-width="1.2"/>
+              <text y="-22" fill="#5ce1e6" text-anchor="middle" font-family="JetBrains Mono" font-size="9">10 · ferrolune</text>
+              <text y="29" fill="#5ce1e6" text-anchor="middle" font-family="JetBrains Mono" font-size="9">KAEL</text>
+            </g>
+
+            <!-- Pos 11: nyx vega (allié) -->
+            <g transform="translate(1050,300)">
+              <circle r="12" fill="#5a8eb6" stroke="#5ce1e6" stroke-width="1.2" stroke-dasharray="2 2"/>
+              <text y="-22" fill="#5ce1e6" text-anchor="middle" font-family="JetBrains Mono" font-size="9">11 · vega</text>
+              <text y="30" fill="#5ce1e6" text-anchor="middle" font-family="JetBrains Mono" font-size="9">NYX</text>
+            </g>
+
+            <!-- Pos 12: drak ouranis (neutre) -->
+            <g transform="translate(1140,300)">
+              <circle r="10" fill="#6b6b6b" stroke="#7d8a9c" stroke-width="1"/>
+              <text y="-22" fill="#7d8a9c" text-anchor="middle" font-family="JetBrains Mono" font-size="9">12 · ouranis</text>
+              <text y="29" fill="#7d8a9c" text-anchor="middle" font-family="JetBrains Mono" font-size="9">DRAK</text>
+            </g>
+
+            <g transform="translate(1220,300)"><circle r="2" fill="#7d8a9c"/><text y="-22" fill="#4a5566" text-anchor="middle" font-family="JetBrains Mono" font-size="9">13</text></g>
+
+            <!-- Pos 14: tarn cend (NOX — ennemi) -->
+            <g transform="translate(1300,300)">
+              <circle r="10" fill="#7a2828" stroke="#ff5a5a" stroke-width="1.2"/>
+              <text y="-22" fill="#ff5a5a" text-anchor="middle" font-family="JetBrains Mono" font-size="9">14 · cend</text>
+              <text y="29" fill="#ff5a5a" text-anchor="middle" font-family="JetBrains Mono" font-size="9">TARN [NOX]</text>
+            </g>
+            <g transform="translate(1380,300)"><circle r="2" fill="#7d8a9c"/><text y="-22" fill="#4a5566" text-anchor="middle" font-family="JetBrains Mono" font-size="9">15</text></g>
+
+            <!-- Trajectoire prévue de l'attaque scellée -->
+            <path d="M 770 300 Q 600 220 440 300" fill="none" stroke="#ffd56a" stroke-width="1" stroke-dasharray="4 4" opacity="0.7"/>
+            <text x="600" y="210" fill="#ffd56a" text-anchor="middle" font-family="JetBrains Mono" font-size="10">[scellé · révélation T+1]</text>
+
+            <!-- Légende -->
+            <g transform="translate(20,510)">
+              <rect width="1460" height="80" fill="#0b1018" stroke="#1f2731" rx="4"/>
+              <g transform="translate(20,30)">
+                <circle r="6" fill="#3d6b8a" stroke="#5ce1e6" stroke-width="1.2"/>
+                <text x="14" y="4" fill="#d8e1ec" font-family="JetBrains Mono" font-size="11">vous</text>
+
+                <circle cx="80" r="6" fill="#3d6b8a" stroke="#5ce1e6" stroke-width="1.2" stroke-dasharray="2 2"/>
+                <text x="94" y="4" fill="#d8e1ec" font-family="JetBrains Mono" font-size="11">allié [AURA]</text>
+
+                <circle cx="220" r="6" fill="#a4502a" stroke="#ff5a5a" stroke-width="1.2"/>
+                <text x="234" y="4" fill="#d8e1ec" font-family="JetBrains Mono" font-size="11">ennemi [NOX]</text>
+
+                <circle cx="360" r="6" fill="#6b6b6b" stroke="#7d8a9c" stroke-width="1"/>
+                <text x="374" y="4" fill="#d8e1ec" font-family="JetBrains Mono" font-size="11">neutre</text>
+
+                <circle cx="450" r="3" fill="#7d8a9c"/>
+                <text x="464" y="4" fill="#d8e1ec" font-family="JetBrains Mono" font-size="11">astéroïde</text>
+              </g>
+              <g transform="translate(20,55)">
+                <circle r="9" fill="none" stroke="#ffd56a" stroke-width="1" stroke-dasharray="3 3"/>
+                <text x="14" y="4" fill="#d8e1ec" font-family="JetBrains Mono" font-size="11">cible d'engagement scellé</text>
+
+                <line x1="240" x2="280" stroke="#ffd56a" stroke-width="1" stroke-dasharray="4 4"/>
+                <text x="290" y="4" fill="#d8e1ec" font-family="JetBrains Mono" font-size="11">trajectoire prévue</text>
+              </g>
+            </g>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── VIEW: FLEET ─── -->
+    <section class="view" data-view="fleet">
+      <div class="view-header">
+        <div class="view-title">
+          <div class="view-breadcrumb">joueurs <span class="sep">/</span> kael <span class="sep">/</span> <span class="file">ordres-scelles.yaml</span> <span class="sep">→</span> nouvel engagement</div>
+          <h1 class="view-h1">Préparer une mission <span class="id-mono">commit-reveal · tick 143</span></h1>
+        </div>
+        <div class="view-actions">
+          <button class="btn ghost">Annuler</button>
+          <button class="btn primary">Sceller (commit hash)</button>
+        </div>
+      </div>
+      <div class="view-body" style="max-width: 980px;">
+
+        <div class="wizard-steps">
+          <div class="wizard-step done"><span class="n">1</span>Cible</div>
+          <div class="wizard-step active"><span class="n">2</span>Composition</div>
+          <div class="wizard-step"><span class="n">3</span>Mission</div>
+          <div class="wizard-step"><span class="n">4</span>Sceller</div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 320px; gap: 22px;">
+          <div>
+            <div class="section-title">Composition de la flotte <span class="right">depuis aetheris-prima</span></div>
+            <div class="fleet-builder">
+              <div class="ship-row"><div class="icon-box">▸</div><div class="info"><div class="name">Sonde</div><div class="available">disponible : 124</div></div><input value="0"/></div>
+              <div class="ship-row"><div class="icon-box">◢</div><div class="info"><div class="name">Chasseur léger</div><div class="available">disponible : 8 420</div></div><input value="4631"/></div>
+              <div class="ship-row"><div class="icon-box">◣</div><div class="info"><div class="name">Chasseur lourd</div><div class="available">disponible : 1 240</div></div><input value="682"/></div>
+              <div class="ship-row"><div class="icon-box">▰</div><div class="info"><div class="name">Croiseur</div><div class="available">disponible : 480</div></div><input value="86"/></div>
+              <div class="ship-row"><div class="icon-box">▰▰</div><div class="info"><div class="name">Frégate</div><div class="available">disponible : 220</div></div><input value="0"/></div>
+              <div class="ship-row"><div class="icon-box">⬢</div><div class="info"><div class="name">Cuirassé</div><div class="available">disponible : 84</div></div><input value="46"/></div>
+              <div class="ship-row"><div class="icon-box">⬣</div><div class="info"><div class="name">Destroyer</div><div class="available">disponible : 12</div></div><input value="0"/></div>
+              <div class="ship-row"><div class="icon-box">▭</div><div class="info"><div class="name">Cargo lourd</div><div class="available">disponible : 340</div></div><input value="0"/></div>
+              <div class="ship-row"><div class="icon-box">▱</div><div class="info"><div class="name">Recycleur</div><div class="available">disponible : 60</div></div><input value="40"/></div>
+            </div>
+
+            <div class="section-title">Type de mission</div>
+            <div class="mission-grid">
+              <div class="mission-card"><div class="name">TRANSPORT</div><div class="desc">Déposer ressources</div></div>
+              <div class="mission-card attaque active"><div class="name">⚔ ATTAQUE</div><div class="desc">Détruire la flotte ennemie</div></div>
+              <div class="mission-card"><div class="name">PILLAGE</div><div class="desc">Voler des ressources</div></div>
+              <div class="mission-card"><div class="name">ESPIONNAGE</div><div class="desc">Rapport gradué</div></div>
+              <div class="mission-card"><div class="name">RECYCLAGE</div><div class="desc">Débris d'une bataille</div></div>
+              <div class="mission-card"><div class="name">COLONISATION</div><div class="desc">Nouvelle planète</div></div>
+            </div>
+          </div>
+
+          <!-- Sidebar de la mission -->
+          <div>
+            <div class="section-title">Cible</div>
+            <div class="alliance-card" style="padding: 16px;">
+              <div style="display:flex; gap: 12px; align-items: center;">
+                <div style="width:40px; height:40px; background: linear-gradient(135deg, #a4502a, #5a280a); border-radius: 50%; border: 2px solid var(--red);"></div>
+                <div>
+                  <div class="mono" style="color: var(--red); font-size: 12px;">VEXOR · pyra-ii</div>
+                  <div class="mono muted" style="font-size: 10px;">[1:42:4] · volcanique</div>
+                </div>
+              </div>
+              <hr style="border: none; border-top: 1px solid var(--line); margin: 14px 0;"/>
+              <div class="kv-list">
+                <div class="kv"><span class="k">distance</span><span class="v">~640 ua</span></div>
+                <div class="kv"><span class="k">temps voyage</span><span class="v cyan">11 UTJ ≈ 27 min</span></div>
+                <div class="kv"><span class="k">arrivée tick</span><span class="v">144 + 5 UTJ</span></div>
+                <div class="kv"><span class="k">consommation</span><span class="v orange">128 400 lumen</span></div>
+                <div class="kv"><span class="k">flotte VEXOR (espion T-3)</span><span class="v">~5 700 ships</span></div>
+                <div class="kv"><span class="k">issue probable</span><span class="v" style="color: var(--green)">favorable</span></div>
+              </div>
+            </div>
+
+            <div class="section-title">Hash de scellement</div>
+            <div class="yaml-view">
+<span class="comment"># prévisualisation du hash qui sera</span>
+<span class="comment"># commité publiquement au tick 143 :</span>
+
+<span class="key">id</span>: <span class="str">atk-pyra-ii-001</span>
+<span class="key">type</span>: <span class="str">militaire</span>
+<span class="key">hash</span>: <span class="str">sha256:8f4c2a91d7e5b340…</span>
+<span class="key">tick_revele</span>: <span class="num">144</span>
+<span class="key">indice</span>: <span class="str">"flotte importante"</span>
+
+<span class="comment"># le contenu réel sera dans</span>
+<span class="comment"># revelations.yaml au tick 144</span>
+            </div>
+
+            <button class="btn primary" style="width: 100%; margin-top: 14px; justify-content: center;">
+              SCELLER L'ENGAGEMENT
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── VIEW: COMBAT ─── -->
+    <section class="view" data-view="combat">
+      <div class="view-header">
+        <div class="view-title">
+          <div class="view-breadcrumb">world <span class="sep">/</span> events <span class="sep">/</span> <span class="file">tick-0143-bataille-pyra.md</span></div>
+          <h1 class="view-h1">Bataille de Pyra II <span class="id-mono">tick 143 · victoire-attaquant</span></h1>
+        </div>
+        <div class="view-actions">
+          <button class="btn ghost">Replay détaillé</button>
+          <button class="btn ghost">Partager</button>
+        </div>
+      </div>
+      <div class="view-body" style="max-width: 1080px;">
+
+        <div class="combat-grid">
+          <div class="combat-side attacker">
+            <div class="h"><span>ATTAQUANT</span><span class="cyan mono">[AURA]</span></div>
+            <div class="player">KAEL</div>
+            <div class="fleet-line"><span class="ship">chasseur_leger</span><span class="count">4 631 <span class="lost">−503</span></span></div>
+            <div class="fleet-line"><span class="ship">chasseur_lourd</span><span class="count">682 <span class="lost">−47</span></span></div>
+            <div class="fleet-line"><span class="ship">croiseur</span><span class="count">86 <span class="lost">−4</span></span></div>
+            <div class="fleet-line"><span class="ship">cuirasse</span><span class="count">46 <span class="lost">0</span></span></div>
+            <div class="fleet-line"><span class="ship">recycleur</span><span class="count">40 <span class="lost">0</span></span></div>
+            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); font-family: 'JetBrains Mono', monospace; font-size: 11px;" class="muted">
+              puissance feu : <span class="cyan">412 850</span><br/>
+              points coque : <span class="cyan">28 142 000</span>
+            </div>
+          </div>
+
+          <div class="vs">
+            <div class="ring">VS</div>
+            <div class="label">6 RONDES</div>
+          </div>
+
+          <div class="combat-side defender">
+            <div class="h"><span>DÉFENSEUR</span><span style="color: var(--red)" class="mono">[NOX]</span></div>
+            <div class="player">VEXOR</div>
+            <div class="fleet-line"><span class="ship">chasseur_leger</span><span class="count">2 840 <span class="lost">−2 840</span></span></div>
+            <div class="fleet-line"><span class="ship">chasseur_lourd</span><span class="count">1 208 <span class="lost">−1 208</span></span></div>
+            <div class="fleet-line"><span class="ship">croiseur</span><span class="count">414 <span class="lost">−414</span></span></div>
+            <div class="fleet-line"><span class="ship">cuirasse</span><span class="count">80 <span class="lost">−80</span></span></div>
+            <div class="fleet-line"><span class="ship">missile_defense</span><span class="count">220 <span class="lost">−220</span></span></div>
+            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); font-family: 'JetBrains Mono', monospace; font-size: 11px;" class="muted">
+              puissance feu : <span style="color: var(--red)">238 100</span><br/>
+              points coque : <span style="color: var(--red)">14 580 000</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-title">Résolution ronde par ronde <span class="right">déterministe · seed tick 143</span></div>
+        <div class="rounds">
+          <div class="round adv-a"><div class="n">R1</div><div class="dmg">3.2M</div><div class="muted">A: −180</div></div>
+          <div class="round adv-a"><div class="n">R2</div><div class="dmg">4.1M</div><div class="muted">A: −210</div></div>
+          <div class="round adv-a"><div class="n">R3</div><div class="dmg">5.8M</div><div class="muted">A: −90</div></div>
+          <div class="round adv-a"><div class="n">R4</div><div class="dmg">3.4M</div><div class="muted">A: −60</div></div>
+          <div class="round adv-a"><div class="n">R5</div><div class="dmg">1.2M</div><div class="muted">A: −12</div></div>
+          <div class="round adv-a"><div class="n">R6</div><div class="dmg">0.4M</div><div class="muted">A: −2</div></div>
+        </div>
+
+        <div class="outcome">
+          <div class="cell victory">
+            <div class="l">Issue</div>
+            <div class="v">VICTOIRE TOTALE</div>
+          </div>
+          <div class="cell">
+            <div class="l">Pillage (50% non protégé)</div>
+            <div class="v" style="color: var(--orange)">+842 K ferrum<br/>+318 K lumen<br/>+94 K plasmide</div>
+          </div>
+          <div class="cell debris">
+            <div class="l">Champ de débris recyclable</div>
+            <div class="v">1.84 M ferrum<br/>620 K lumen</div>
+          </div>
+        </div>
+
+        <div class="section-title">Source canonique</div>
+        <div class="yaml-view">
+<span class="comment">---</span>
+<span class="key">type</span>: <span class="str">bataille</span>
+<span class="key">tick</span>: <span class="num">143</span>
+<span class="key">attaquant</span>: <span class="str">kael</span>
+<span class="key">defenseur</span>: <span class="str">vexor</span>
+<span class="key">lieu</span>: { <span class="key">systeme</span>: <span class="str">"1:42"</span>, <span class="key">position</span>: <span class="num">4</span> }
+<span class="key">issue</span>: <span class="str">victoire-attaquant</span>
+<span class="key">butin</span>: { <span class="key">ferrum</span>: <span class="num">842100</span>, <span class="key">lumen</span>: <span class="num">318400</span>, <span class="key">plasmide</span>: <span class="num">94280</span> }
+<span class="key">champ_de_debris</span>: { <span class="key">ferrum</span>: <span class="num">1840000</span>, <span class="key">lumen</span>: <span class="num">620000</span> }
+<span class="key">replay_path</span>: <span class="str">engine/replays/tick-143-bataille-pyra.json</span>
+<span class="comment">---</span>
+
+<span class="comment"># Bataille de Pyra II — tick 143</span>
+
+VEXOR a perdu 4 762 vaisseaux dont 80 cuirassés.
+KAEL a perdu 554 chasseurs et 4 croiseurs.
+Le champ de débris au-dessus de Pyra II est récupérable
+par recycleur jusqu'au tick 167 (24 ticks ≈ 6h IRL).
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── VIEW: ALLIANCE ─── -->
+    <section class="view" data-view="alliance">
+      <div class="view-header">
+        <div class="view-title">
+          <div class="view-breadcrumb">alliances <span class="sep">/</span> aura <span class="sep">/</span> <span class="file">charte.md</span></div>
+          <h1 class="view-h1">Aurora Concord <span class="id-mono">[AURA] · 47 membres · rang #4</span></h1>
+        </div>
+      </div>
+      <div class="view-body" style="max-width: 980px;">
+
+        <div class="alliance-card">
+          <div class="alliance-head">
+            <div class="crest">A</div>
+            <div class="info">
+              <div class="tag">[AURA]</div>
+              <h3>Aurora Concord</h3>
+              <div class="motto">« Endure through the long night. »</div>
+            </div>
+            <div class="kv-list" style="text-align: right;">
+              <div class="kv"><span class="k">membres</span><span class="v">47</span></div>
+              <div class="kv"><span class="k">fondée</span><span class="v">tick 0001</span></div>
+              <div class="kv"><span class="k">guerres actives</span><span class="v" style="color: var(--red)">1 (NOX)</span></div>
+            </div>
+          </div>
+
+          <div class="section-title" style="margin-top: 0;">Conseil <span class="right">9 plus hauts scores militaires</span></div>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+            <div class="ship-row"><div class="icon-box">1</div><div class="info"><div class="name">NYX</div><div class="available">484K militaire</div></div></div>
+            <div class="ship-row" style="border-color: var(--cyan-dim);"><div class="icon-box" style="color: var(--cyan)">2</div><div class="info"><div class="name">KAEL <span class="muted">(vous)</span></div><div class="available">312K militaire</div></div></div>
+            <div class="ship-row"><div class="icon-box">3</div><div class="info"><div class="name">IRA</div><div class="available">158K militaire</div></div></div>
+            <div class="ship-row"><div class="icon-box">4</div><div class="info"><div class="name">AKIRO</div><div class="available">142K militaire</div></div></div>
+            <div class="ship-row"><div class="icon-box">5</div><div class="info"><div class="name">MAESTRA</div><div class="available">128K militaire</div></div></div>
+            <div class="ship-row"><div class="icon-box">6</div><div class="info"><div class="name">THORN</div><div class="available">110K militaire</div></div></div>
+            <div class="ship-row" style="border-color: var(--orange-dim);"><div class="icon-box" style="color: var(--orange)">7</div><div class="info"><div class="name">EVAN-7 <span class="orange mono" style="font-size:10px;">[IA]</span></div><div class="available">96K militaire</div></div></div>
+            <div class="ship-row"><div class="icon-box">8</div><div class="info"><div class="name">RILA</div><div class="available">88K militaire</div></div></div>
+            <div class="ship-row"><div class="icon-box">9</div><div class="info"><div class="name">VENNIK</div><div class="available">81K militaire</div></div></div>
+          </div>
+        </div>
+
+        <div class="callout orange">
+          <strong style="color: var(--orange);">⚔ OP. EMBERFALL</strong> — Frappe coordonnée sur Pyra II au tick 144.
+          8 participants. Ton engagement scellé <span class="mono">atk-pyra-ii-001</span> en fait partie.
+          Voir <span class="mono">alliances/aura/intel/op-emberfall.md</span>.
+        </div>
+
+        <div class="section-title">Pacte de l'alliance <span class="right">charte.md</span></div>
+        <ol style="color: var(--text-dim); line-height: 1.8;">
+          <li><strong>Non-agression intra-alliance</strong> — toute attaque entre membres = expulsion par vote du conseil.</li>
+          <li><strong>Partage défensif</strong> — sur appel, chaque planète à ≤ 5 systèmes envoie ≥ 1 flotte sous 4 ticks.</li>
+          <li><strong>Marché préférentiel</strong> — ratio <span class="mono cyan">2.5:1.5:1</span> entre membres (vs <span class="mono">3:2:1</span> standard).</li>
+          <li><strong>Renseignement collectif</strong> — tout rapport d'espionnage &gt; niveau 3 va dans <span class="mono">alliances/aura/intel/</span>.</li>
+          <li><strong>Vote pour les guerres</strong> — déclarer la guerre demande 2/3 du conseil.</li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ─── VIEW: PROTOCOL ─── -->
+    <section class="view" data-view="protocol">
+      <div class="view-header">
+        <div class="view-title">
+          <div class="view-breadcrumb">engine <span class="sep">/</span> <span class="file">PROTOCOL.md</span></div>
+          <h1 class="view-h1">AETHERIS // PROTOCOL <span class="id-mono">v0.1 · spec pour humains, scripts et agents IA</span></h1>
+        </div>
+      </div>
+      <div class="view-body gdd">
+
+        <div class="callout">
+          <strong class="cyan">Cette page est lisible par un LLM en une passe.</strong>
+          Tout l'état du jeu — galaxie, empires, flottes, ordres, batailles — vit dans des fichiers <code>.md</code> et <code>.yaml</code> versionnés Git. Pas de backend, pas de DB, pas de WebSocket. Le résolveur est un script Node de 600 lignes, déterministe à partir d'un seed.
+        </div>
+
+        <h2>Le pitch en 5 lignes</h2>
+        <ul>
+          <li>Un repo Git = un serveur de jeu.</li>
+          <li>Une clé Ed25519 = un joueur.</li>
+          <li>Un commit = un tour.</li>
+          <li>Une GitHub Action toutes les 15 min = la simulation tourne.</li>
+          <li>Un README = la page d'accueil. Un agent IA peut jouer en lisant <code>PROTOCOL.md</code>.</li>
+        </ul>
+
+        <h2>Pourquoi ce format ?</h2>
+        <p>Aetheris est inspiré du genre 4X spatial classique, mais ses sessions sont déjà <em>de facto</em> tour-par-tour : on ouvre le client 2-3× par jour, 5 minutes à chaque fois. Le temps réel ne sert à rien. Un système de tick toutes les 15 min suffit à reproduire la même boucle.</p>
+        <p>En passant l'état dans des fichiers texte, on gagne :</p>
+        <ul>
+          <li><strong>Auditabilité totale.</strong> Tout est lisible, tout est diffable, tout est rejouable.</li>
+          <li><strong>Pas de cheat invisible.</strong> Le résolveur est public, déterministe ; n'importe qui peut rejouer un tick et vérifier.</li>
+          <li><strong>IA-natif.</strong> Un agent qui sait lire du Markdown joue immédiatement. Plus besoin d'API ni de scrapping.</li>
+          <li><strong>Fork-friendly.</strong> Tu n'aimes pas l'équilibrage ? Fork le repo, change <code>rules.yaml</code>, lance ton propre serveur.</li>
+        </ul>
+
+        <h2>Topologie du repo</h2>
+        <pre>aetheris-alpha-7/
+├── README.md                       Présentation humaine
+├── world/
+│   ├── manifest.yaml               Tick courant, seed, hash d'état
+│   ├── galaxie.yaml                Carte canonique
+│   ├── classements.md
+│   └── events/tick-NNNN-*.md       Batailles, traités, événements
+├── joueurs/&lt;nom&gt;/
+│   ├── identite.yaml               Clé publique Ed25519
+│   ├── empire.yaml                 État (lecture seule, généré)
+│   ├── empire.md                   Vue lisible (générée)
+│   ├── ordres.yaml                 ← TU ÉCRIS ICI
+│   ├── ordres-scelles.yaml         ← ET ICI (commit-reveal)
+│   └── revelations.yaml            ← ET ICI (au tick suivant)
+├── alliances/&lt;tag&gt;/
+│   ├── charte.md
+│   ├── membres.yaml
+│   └── traites.yaml
+├── history/tick-NNNN.tar.gz
+└── engine/
+    ├── PROTOCOL.md                 Cette spec
+    ├── tick.mjs                    Le résolveur (600 lignes, zéro dep)
+    ├── rules.yaml                  Constantes (coûts, vitesses, formules)
+    └── join.mjs                    Inscription d'un nouveau joueur</pre>
+
+        <h2>Le commit-reveal pour les ordres secrets</h2>
+        <p>Tout le repo est public. Si tu commitais ton attaque en clair au tick T-1, ta cible la verrait et sauverait sa flotte. Avec <strong>commit-reveal</strong> :</p>
+        <ol style="color: var(--text-dim);">
+          <li>Au tick T-1, tu commits un <strong>hash</strong> de ton ordre dans <code>ordres-scelles.yaml</code>.</li>
+          <li>Ta cible voit qu'il y a <em>quelque chose</em> de militaire qui se prépare, sans savoir où.</li>
+          <li>Au tick T, tu révèles le contenu réel dans <code>revelations.yaml</code>.</li>
+          <li>L'engine vérifie <code>sha256(yaml(revelation)) == hash_du_tick_precedent</code>. Sinon, l'engagement est annulé et tu perds de l'Influence.</li>
+        </ol>
+
+        <h2>L'API pour les agents IA, en 30 lignes</h2>
+        <pre>def jouer_tour():
+    moi = yaml.load("joueurs/mon_nom/empire.yaml")
+    monde = yaml.load("world/galaxie.yaml")
+    manifest = yaml.load("world/manifest.yaml")
+
+    ordres = []
+    for planete in moi["planetes"]:
+        b = min(planete["batiments"], key=planete["batiments"].get)
+        ordres.append({
+            "type": "chantier",
+            "planete": planete["nom"],
+            "batiment": b,
+            "niveau_cible": planete["batiments"][b] + 1,
+        })
+
+    yaml.dump({
+        "version": 1,
+        "joueur": "mon_nom",
+        "tick_cible": manifest["tick"] + 1,
+        "nonce": secrets.token_hex(3),
+        "ordres": ordres,
+    }, "joueurs/mon_nom/ordres.yaml")
+
+    sign_in_place("joueurs/mon_nom/ordres.yaml")
+    git.commit_and_push()</pre>
+        <p>Voilà. Ton agent est un joueur d'Aetheris. Un agent baseline (~150 lignes) joue à peu près le niveau d'un humain qui se connecte 2× par jour.</p>
+
+        <h2>Statut MVP</h2>
+        <pre>[████████████████████░░░] MVP — 80%
+ ✓ Schémas YAML
+ ✓ Résolveur déterministe (production, recherche, mouvements, transports)
+ ✓ Combat 6-rondes
+ ✓ Commit-reveal pour ordres scellés
+ ✓ Agent baseline Python
+ ✓ UI web read-only (cette console)
+ ◯ UI web read-write (push direct depuis le navigateur via OAuth GitHub)
+ ◯ Vérification cryptographique des signatures (stub présent dans tick.mjs)
+ ◯ Marché P2P
+ ◯ Mode tournoi agent-vs-agent (benchmark LLM)</pre>
+
+        <h2>Les fichiers du MVP livrables</h2>
+        <p>Tout est dans <code>aetheris-protocol/</code> dans ce projet :</p>
+        <ul>
+          <li><code>README.md</code>, <code>engine/PROTOCOL.md</code> — la doc</li>
+          <li><code>engine/tick.mjs</code>, <code>engine/rules.yaml</code> — le résolveur</li>
+          <li><code>world/manifest.yaml</code>, <code>world/galaxie.yaml</code> — l'état du serveur</li>
+          <li><code>joueurs/{kael,vexor,ira}/</code> — 3 joueurs prêts</li>
+          <li><code>alliances/aura/</code> — 1 alliance complète</li>
+          <li><code>agents/baseline.py</code> — l'agent IA de référence</li>
+          <li><code>.github/workflows/tick.yml</code> — le cron qui résout les ticks</li>
+        </ul>
+
+        <p style="margin-top: 32px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--text-mute); font-size: 12px;" class="mono">
+          // fin de la spécification v0.1<br/>
+          // toute modification breaking incrémente le major
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ═══════════ INSPECTOR (right) ═══════════ -->
+  <aside class="inspector">
+    <div class="inspector-tabs">
+      <div class="inspector-tab active">YAML BRUT</div>
+      <div class="inspector-tab">DIFF</div>
+      <div class="inspector-tab">COMMITS</div>
+    </div>
+
+    <div class="inspector-body">
+      <div class="kv-list" style="margin-bottom: 14px;">
+        <div class="kv"><span class="k">fichier</span><span class="v cyan">empire.yaml</span></div>
+        <div class="kv"><span class="k">tick</span><span class="v">142</span></div>
+        <div class="kv"><span class="k">taille</span><span class="v">3 092 o</span></div>
+        <div class="kv"><span class="k">dernier commit</span><span class="v mono">a3f2c19</span></div>
+        <div class="kv"><span class="k">auteur</span><span class="v">aetheris-engine</span></div>
+        <div class="kv"><span class="k">vérifié</span><span class="v" style="color: var(--green)">✓ déterministe</span></div>
+      </div>
+
+      <div class="yaml-view">
+<span class="comment"># Généré par engine/tick.mjs — ne pas éditer.</span>
+<span class="key">version</span>: <span class="num">1</span>
+<span class="key">joueur</span>: <span class="str">kael</span>
+<span class="key">tick</span>: <span class="num">142</span>
+<span class="key">score_total</span>: <span class="num">312500</span>
+<span class="key">alliance</span>: <span class="str">aura</span>
+
+<span class="key">planetes</span>:
+  <span class="dash">-</span> <span class="key">nom</span>: <span class="str">aetheris-prima</span>
+    <span class="key">coordonnees</span>: [<span class="num">1</span>, <span class="num">42</span>, <span class="num">8</span>]
+    <span class="key">type</span>: <span class="str">tellurique</span>
+    <span class="key">ressources</span>:
+      <span class="key">ferrum</span>:
+        <span class="key">stock</span>: <span class="num">2847520</span>
+        <span class="key">production_par_utj</span>: <span class="num">2080</span>
+        <span class="key">capacite</span>: <span class="num">5000000</span>
+      <span class="key">lumen</span>:
+        <span class="key">stock</span>: <span class="num">1204880</span>
+        <span class="key">production_par_utj</span>: <span class="num">1020</span>
+      <span class="key">plasmide</span>:
+        <span class="key">stock</span>: <span class="num">487213</span>
+        <span class="key">production_par_utj</span>: <span class="num">470</span>
+    <span class="key">batiments</span>:
+      <span class="key">mine_ferrum</span>: <span class="num">24</span>
+      <span class="key">extracteur_lumen</span>: <span class="num">21</span>
+      <span class="comment">… (12 bâtiments)</span>
+    <span class="key">file_chantier</span>:
+      <span class="dash">-</span> <span class="key">batiment</span>: <span class="str">mine_ferrum</span>
+        <span class="key">niveau_cible</span>: <span class="num">25</span>
+        <span class="key">fin_utj</span>: <span class="num">16</span>
+    <span class="key">flotte_au_sol</span>:
+      <span class="key">chasseur_leger</span>: <span class="num">8420</span>
+      <span class="comment">… (9 types)</span>
+      </div>
+
+      <div style="margin-top: 14px;">
+        <div class="nav-title">DERNIERS TICKS</div>
+        <div class="commit-log">
+          <div class="commit engine"><span class="hash">a3f2c19</span><span class="msg"><span class="tick-tag">142</span>3 ordres, 0 batailles</span><span class="author">engine</span></div>
+          <div class="commit"><span class="hash">8b7e445</span><span class="msg">kael: tour 142</span><span class="author">kael</span></div>
+          <div class="commit"><span class="hash">9c1d822</span><span class="msg">ira: tour 142</span><span class="author">ira</span></div>
+          <div class="commit engine"><span class="hash">f4a91c8</span><span class="msg"><span class="tick-tag">141</span>5 ordres, 1 bataille</span><span class="author">engine</span></div>
+          <div class="commit"><span class="hash">2d83e10</span><span class="msg">vexor: tour 141</span><span class="author">vexor</span></div>
+          <div class="commit engine"><span class="hash">7e5bf32</span><span class="msg"><span class="tick-tag">140</span>4 ordres, 0 batailles</span><span class="author">engine</span></div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ═══════════ STATUSBAR ═══════════ -->
+  <footer class="statusbar">
+    <span class="item"><span class="dot green"></span>repo synchronisé</span>
+    <span class="item">git: main · ahead 0 · behind 0</span>
+    <span class="item">3 ordres en attente · 1 scellé</span>
+    <span class="item">node engine/tick.mjs --dry-run pour simuler</span>
+    <span class="right">tick 142 · seed 0xa3f2c19e4b8d0721 · hash sha256:c4f8…d5f6</span>
+  </footer>
+</div>
+
+<!-- ─── Sign dialog ─── -->
+<div class="dialog-overlay" id="signDialog" style="display:none;">
+  <div class="dialog">
+    <div class="h">
+      <span class="t">SIGNER & PUSH — TICK 143</span>
+      <button class="btn ghost" onclick="document.getElementById('signDialog').style.display='none'">✕</button>
+    </div>
+    <div class="b">
+      <p style="font-size: 13px; color: var(--text-dim);">
+        Tes ordres seront signés avec ta clé Ed25519 locale,
+        puis poussés sur la branche <span class="mono cyan">main</span>.
+        L'engine résoudra le tick automatiquement dans <span class="mono orange">8 min</span>.
+      </p>
+
+      <div class="signing-anim">
+        <div class="step ok">canonicalisation YAML</div>
+        <div class="step ok">hash SHA-256 calculé</div>
+        <div class="step ok">signature Ed25519 apposée</div>
+        <div class="step pending">git add joueurs/kael/ordres.yaml</div>
+        <div class="step pending">git commit -m "kael: tour 143"</div>
+        <div class="step pending">git push origin main</div>
+      </div>
+
+      <div class="kv-list" style="margin-top: 14px;">
+        <div class="kv"><span class="k">fichiers signés</span><span class="v">2</span></div>
+        <div class="kv"><span class="k">ordres clairs</span><span class="v">3</span></div>
+        <div class="kv"><span class="k">engagements scellés</span><span class="v">1</span></div>
+        <div class="kv"><span class="k">nonce</span><span class="v mono">9f3a2c</span></div>
+      </div>
+    </div>
+    <div class="f">
+      <button class="btn ghost" onclick="document.getElementById('signDialog').style.display='none'">Annuler</button>
+      <button class="btn primary">Confirmer & push</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Navigation
+const navItems = document.querySelectorAll('.nav-item');
+const views = document.querySelectorAll('.view');
+navItems.forEach(item => {
+  item.addEventListener('click', () => {
+    const v = item.dataset.view;
+    if (!v) return;
+    navItems.forEach(n => n.classList.remove('active'));
+    views.forEach(view => view.classList.remove('active'));
+    item.classList.add('active');
+    document.querySelector(`.view[data-view="${v}"]`).classList.add('active');
+  });
+});
+
+// Tick countdown
+let secs = 8 * 60 + 14;
+function tickCountdown() {
+  secs--;
+  if (secs < 0) secs = 15 * 60;
+  const m = String(Math.floor(secs / 60)).padStart(2, '0');
+  const s = String(secs % 60).padStart(2, '0');
+  const els = document.querySelectorAll('.tick-info .value.orange');
+  if (els[0]) els[0].textContent = `${m}:${s}`;
+  const pct = 100 - (secs / (15 * 60)) * 100;
+  document.querySelector('.tick-progress').style.setProperty('--tick-pct', pct + '%');
+}
+setInterval(tickCountdown, 1000);
+</script>
+</body>
+</html>

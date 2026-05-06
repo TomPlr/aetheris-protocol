@@ -1,0 +1,21 @@
+version: 1
+alliance: aura
+tick: 142
+nom_complet: Aurora Concord
+fondee_tick: 1
+
+conseil:
+  - { joueur: nyx,     points_militaires: 484000 }
+  - { joueur: kael,    points_militaires: 312000 }
+  - { joueur: ira,     points_militaires: 158000 }
+  - { joueur: akiro,   points_militaires: 142000 }
+  - { joueur: maestra, points_militaires: 128000 }
+  - { joueur: thorn,   points_militaires: 110000 }
+  - { joueur: evan-7,  points_militaires:  96000, type: agent_ia }
+  - { joueur: rila,    points_militaires:  88000 }
+  - { joueur: vennik,  points_militaires:  81000 }
+
+membres_total: 47
+
+guerres_actives:
+  - { contre: nox, depuis_tick: 84 }

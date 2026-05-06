@@ -1,0 +1,12 @@
+# Tick 2 — la mine se finit, on enchaîne avec extracteur_lumen 0→1.
+version: 1
+joueur: kael
+tick_cible: 2
+nonce: 8f6f2c
+
+ordres:
+  - type: chantier
+    planete: kael-prima
+    batiment: extracteur_lumen
+    niveau_cible: 1
+signature: ed25519:SXtoep6qaOXkwDjNnsSTg8y/OKlYK884GTtkmGUXn2cyNvhqVERaX62pbz1vDbrpu63KgMy3k1/yO1huN9YsBg==
