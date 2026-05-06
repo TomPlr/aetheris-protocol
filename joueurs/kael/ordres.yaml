@@ -1,12 +1,12 @@
-# Tick 2 — la mine se finit, on enchaîne avec extracteur_lumen 0→1.
+# Généré depuis la console (2026-05-06T22:14:13.558Z)
 version: 1
 joueur: kael
-tick_cible: 2
-nonce: 8f6f2c
+tick_cible: 3
+nonce: b6da97
 
 ordres:
   - type: chantier
     planete: kael-prima
-    batiment: extracteur_lumen
-    niveau_cible: 1
-signature: ed25519:SXtoep6qaOXkwDjNnsSTg8y/OKlYK884GTtkmGUXn2cyNvhqVERaX62pbz1vDbrpu63KgMy3k1/yO1huN9YsBg==
+    batiment: mine_ferrum
+    niveau_cible: 2
+signature: ed25519:Zfh8TqpPMQ9p78PWySBjr8tJC8EJqgR5Mz8ML0nRQn2wcRPWoy35XdhA+ZTiGqMsxGDn+6+Z5lhJhJTMGgB/Dw==
