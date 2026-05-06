@@ -1,12 +1,12 @@
-# Généré depuis la console (2026-05-06T22:15:33.389Z)
+# Généré depuis la console (2026-05-06T22:19:27.626Z)
 version: 1
 joueur: kael
 tick_cible: 3
-nonce: db0f7a
+nonce: cf1dc0
 
 ordres:
   - type: chantier
     planete: kael-prima
     batiment: mine_ferrum
     niveau_cible: 2
-signature: ed25519:LzNqQaP0CTSp0Xt52ErG+Juia9OzD+4veXaXoK179nkREmbLS6Eu0HulokF5KTrT8w2rA6Ph6GXQVx0/Bn0bAw==
+signature: ed25519:qmnxutZoRJm5Jld5775ERcLoA8bz/bp6/+kVQe6TNL+q8fpIMl2FRrm009j6aVwmwuxijvZfkuKFVIEvuS0wAg==
