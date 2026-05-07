@@ -30,7 +30,7 @@ systemes:
       5: { type: planete, proprietaire: null, classe: volcanique }
       6: { type: asteroide }
       7: { type: planete, proprietaire: null, classe: gazeuse }
-      8: { type: planete, proprietaire: null, classe: tellurique }
+      8: { type: planete, proprietaire: kcdq, nom: kcdq-prima, classe: tellurique }
       9: { type: asteroide }
       10: { type: asteroide }
       11: { type: planete, proprietaire: null, classe: glacee }

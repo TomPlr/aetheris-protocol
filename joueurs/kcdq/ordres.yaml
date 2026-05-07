@@ -1,0 +1,7 @@
+# Premier ordre — exemple : upgrade ta mine de ferrum.
+version: 1
+joueur: kcdq
+tick_cible: 19
+nonce: 30d73b
+
+ordres: []
