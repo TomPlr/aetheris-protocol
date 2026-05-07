@@ -1,8 +1,8 @@
-# Généré depuis la console (2026-05-07T15:05:03.570Z)
+# Généré depuis la console (2026-05-07T15:07:58.217Z)
 version: 1
 joueur: kcdq
 tick_cible: 37
-nonce: "1b9a17"
+nonce: "346595"
 
 ordres:
   - type: chantier
@@ -13,4 +13,8 @@ ordres:
     planete: kcdq-prima
     batiment: centrale_solaire
     niveau_cible: 1
-signature: ed25519:Xs92aPmEiEX0y8tsU2QWigRt4uO1TwxR63wfA7jhMZf01zdhpuVwCSI6poKo5sSViPMJM5c1GOEv7milJAgRDQ==
+  - type: chantier
+    planete: kcdq-prima
+    batiment: synthetiseur_plasmide
+    niveau_cible: 1
+signature: ed25519:KpNRHO041e/QfCO1MXXKdQhQb/9r3y/56BGUMDZfmJlGTCqBj7tYji3ENOrEDBnpE9qLEvfF7wW9VdGO/f9wCw==
