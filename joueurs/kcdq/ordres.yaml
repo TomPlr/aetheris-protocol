@@ -1,8 +1,8 @@
-# Généré depuis la console (2026-05-07T15:11:17.552Z)
+# Généré depuis la console (2026-05-07T15:12:11.872Z)
 version: 1
 joueur: kcdq
 tick_cible: 37
-nonce: "fec077"
+nonce: "5039da"
 
 ordres:
   - type: chantier
@@ -18,6 +18,6 @@ ordres:
     batiment: synthetiseur_plasmide
     niveau_cible: 1
   - type: recherche
-    technologie: robotique
+    technologie: automation_miniere
     niveau_cible: 1
-signature: ed25519:VDg8PhPyPaos8nqDwsvE8RA0YwIfKG1Yvwd2cfbqLW40ScGrGyDnAv9vVqYzWLH173Q2ZXlh0rqr1oI4ugt6Ag==
+signature: ed25519:F7bDLIrGcNcEVkKfhnXOWRHxlEakY73bqXrBbERKSWCUTvmzH6UYuMOIdLbxzNBkMZ91wO+xJZjGFgde9wVIDA==
