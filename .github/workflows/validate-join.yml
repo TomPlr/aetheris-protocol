@@ -34,6 +34,33 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
 
+      - name: Anti-spam (age compte + 1 PR active max)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AUTHOR: ${{ github.event.pull_request.user.login }}
+          OWNER: ${{ github.repository_owner }}
+          PR_NUM: ${{ github.event.pull_request.number }}
+        run: |
+          set -e
+          # L'owner du repo est exempt (auto-tests, admin).
+          if [ "$AUTHOR" = "$OWNER" ]; then
+            echo "owner — skip anti-spam"; exit 0
+          fi
+          CREATED=$(gh api users/"$AUTHOR" --jq .created_at)
+          NOW_S=$(date -u +%s)
+          CREATED_S=$(date -u -d "$CREATED" +%s)
+          AGE_DAYS=$(( (NOW_S - CREATED_S) / 86400 ))
+          if [ "$AGE_DAYS" -lt 14 ]; then
+            gh pr comment "$PR_NUM" -b "❌ Compte GitHub trop jeune (${AGE_DAYS}j < 14j). Anti-spam."
+            exit 1
+          fi
+          OPEN=$(gh pr list --repo "${{ github.repository }}" --author "$AUTHOR" --state open --json headRefName --jq '[.[] | select(.headRefName | startswith("join/"))] | length')
+          if [ "$OPEN" -gt 1 ]; then
+            gh pr comment "$PR_NUM" -b "❌ Une PR d'inscription est deja ouverte par cet auteur. Ferme l'ancienne d'abord."
+            exit 1
+          fi
+          echo "anti-spam OK : compte ${AGE_DAYS}j, ${OPEN} PR(s) ouverte(s)"
+
       - name: Validate
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

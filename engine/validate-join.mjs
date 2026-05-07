@@ -225,6 +225,37 @@ if (errors.length === 0) {
       }
     }
   }
+
+  // 10. Anti-race : la planete revendiquee doit toujours etre libre sur le tip de main
+  // au moment ou le validator tourne. Si une autre PR a merge entre-temps, on rejette
+  // avec un message explicite (le user re-run join.html, qui re-pickera une autre planete).
+  if (claimed) {
+    try {
+      try { sh('git fetch origin main --quiet'); } catch { /* deja a jour */ }
+      const galLatest = sh('git show origin/main:world/galaxie.yaml');
+      const slot = getPlanetAt(galLatest, claimed[0], claimed[1], claimed[2]);
+      if (!slot) fail(`anti-race : planete ${claimed.join(':')} introuvable sur origin/main`);
+      else if (slot.proprietaire !== null && slot.proprietaire !== NAME)
+        fail(`anti-race : la planete ${claimed.join(':')} a ete claim par "${slot.proprietaire}" entre-temps. Re-genere ton inscription via join.html (la prochaine planete libre sera selectionnee automatiquement).`);
+    } catch (e) {
+      fail(`anti-race : check impossible (${e.message})`);
+    }
+  }
+}
+
+function getPlanetAt(galaxieText, g, s, pos) {
+  const lines = galaxieText.split('\n');
+  let inSys = false;
+  for (const line of lines) {
+    const sm = line.match(/^\s+"(\d+):(\d+)":/);
+    if (sm) { inSys = parseInt(sm[1]) === g && parseInt(sm[2]) === s; continue; }
+    if (!inSys) continue;
+    const pm = line.match(/^\s+(\d+):\s*\{\s*type:\s*planete,\s*proprietaire:\s*([\w-]+|null)(?:,\s*nom:\s*[\w-]+)?,\s*classe:\s*(\w+)\s*\}/);
+    if (pm && parseInt(pm[1]) === pos) {
+      return { proprietaire: pm[2] === 'null' ? null : pm[2], classe: pm[3] };
+    }
+  }
+  return null;
 }
 
 // 10. Verdict
