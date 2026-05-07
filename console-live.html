@@ -924,6 +924,8 @@ h2.sect .num {
   font-family: var(--display); font-style: italic; color: var(--bone-dim);
   font-size: 13px; padding: 10px 0;
 }
+/* Indicateur hoverable pour expliquer l'unite UTJ. */
+.utj-help { cursor: help; border-bottom: 1px dotted currentColor; }
 </style>
 </head>
 <body>
@@ -1518,7 +1520,7 @@ function renderResourceStrip(p) {
       <div class="stock">${fmtCompact(info.stock)}</div>
       <div class="bar"><i class="${warn?'warn':''}" style="width:${pct}%"></i></div>
       <div class="meta">
-        <span class="prod ${prod===0?'zero':''}">${prod>0?'+':''}${prod}/utj</span>
+        <span class="prod ${prod===0?'zero':''}">${prod>0?'+':''}${prod}/<span class="utj-help" title="1 tick = 6 UTJ ≈ 15 min. Le moteur progresse par ticks ; UTJ est l'unite interne de duree.">utj</span></span>
         <span>${fmtCompact(info.stock)} / ${fmtCompact(info.capacite)}</span>
       </div>
     </div>`;
@@ -1838,7 +1840,7 @@ function renderUnitGrid(p, kind) {
 
     footer += `<div class="upg qrow">
       <div class="cost">${costHtml}</div>
-      <span class="dur">${dur} UTJ/u</span>
+      <span class="dur">${dur} <span class="utj-help" title="1 tick = 6 UTJ ≈ 15 min. Coût en UTJ par unite ; multiplie par la quantite construite.">UTJ</span>/u</span>
       <div class="qbtns">${isPending ? '<button disabled>…</button>' : buttons}</div>
     </div>`;
     if (reqBad) footer = `<div class="req">requiert <b>${missing}</b></div>` + footer;
@@ -1956,7 +1958,7 @@ function renderRail(p, emp) {
     html += `<div class="qitem">
       <div class="top">
         <div class="nm">${labels[c.batiment] || c.batiment}<small>niveau ${c.niveau_cible}</small></div>
-        <div class="tgt">${remain}<small style="font-family:var(--sans);font-size:9.5px;font-weight:600;letter-spacing:0.04em;color:var(--bone-dim);display:block;margin-top:4px;text-align:right;text-transform:uppercase">UTJ</small></div>
+        <div class="tgt">${remain}<small style="font-family:var(--sans);font-size:9.5px;font-weight:600;letter-spacing:0.04em;color:var(--bone-dim);display:block;margin-top:4px;text-align:right;text-transform:uppercase"><span class="utj-help" title="1 tick = 6 UTJ ≈ 15 min. Le moteur progresse par ticks ; UTJ est l'unite interne de duree.">UTJ</span></small></div>
       </div>
       <div class="tmeta"><span>≈ <b>${mins}</b> min restantes</span><span>${remain <= 6 ? 'achève au prochain tick' : Math.ceil(remain/6) + ' ticks'}</span></div>
     </div>`;
@@ -1975,7 +1977,7 @@ function renderRail(p, emp) {
         return `<div class="qitem">
           <div class="top">
             <div class="nm">${r.recherche || r.discipline || '?'}<small>niv ${r.niveau_cible || '?'}</small></div>
-            <div class="tgt">${remain}<small style="font-family:var(--mono);font-size:9px;letter-spacing:0.18em;color:var(--bone-dim);display:block;margin-top:2px;text-align:right">UTJ</small></div>
+            <div class="tgt">${remain}<small style="font-family:var(--mono);font-size:9px;letter-spacing:0.18em;color:var(--bone-dim);display:block;margin-top:2px;text-align:right"><span class="utj-help" title="1 tick = 6 UTJ ≈ 15 min. Le moteur progresse par ticks ; UTJ est l'unite interne de duree.">UTJ</span></small></div>
           </div>
         </div>`;
       }).join('');
@@ -1990,7 +1992,7 @@ function renderRail(p, emp) {
         return `<div class="qitem">
           <div class="top">
             <div class="nm">${x.type_mission || 'mission'}<small>${(x.depuis?.planete||'?')} → ${(x.vers?.planete||x.vers||'?')}</small></div>
-            <div class="tgt">${remain}<small style="font-family:var(--mono);font-size:9px;letter-spacing:0.18em;color:var(--bone-dim);display:block;margin-top:2px;text-align:right">UTJ</small></div>
+            <div class="tgt">${remain}<small style="font-family:var(--mono);font-size:9px;letter-spacing:0.18em;color:var(--bone-dim);display:block;margin-top:2px;text-align:right"><span class="utj-help" title="1 tick = 6 UTJ ≈ 15 min. Le moteur progresse par ticks ; UTJ est l'unite interne de duree.">UTJ</span></small></div>
           </div>
         </div>`;
       }).join('');
