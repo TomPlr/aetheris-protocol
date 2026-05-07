@@ -93,14 +93,14 @@
 // ============================================================================
 const CONFIG = {
   // Repo cible (owner/repo). C'est la-dedans qu'on ouvre la PR.
-  upstream: 'aetheris/alpha-7',
+  upstream: 'meffysto/aetheris-protocol',
   // GitHub OAuth App "Device Flow" client_id (public, peut etre commit).
   // Cree-le sur https://github.com/settings/developers (Enable Device Flow = ON).
-  clientId: 'Iv1.PLACEHOLDER_CLIENT_ID',
+  clientId: 'Ov23li7ZHGzhrDKFTeXl',
   // Proxy CORS pour les endpoints OAuth de github.com (qui ne servent pas d'en-tetes CORS).
   // Deploie engine/oauth-proxy/worker.js sur Cloudflare Workers et colle l'URL deployee ici
   // (sans trailing slash). Le Worker forward /login/device/code et /login/oauth/access_token.
-  oauthProxy: '',
+  oauthProxy: 'https://aetheris-oauth-proxy.meffysto.workers.dev',
   // Nom de la branche principale du repo.
   defaultBranch: 'main',
 };
