@@ -1,12 +1,16 @@
-# Généré depuis la console (2026-05-07T14:56:09.485Z)
+# Généré depuis la console (2026-05-07T14:58:16.664Z)
 version: 1
 joueur: kcdq
 tick_cible: 36
-nonce: 3dfef4
+nonce: 9a7d30
 
 ordres:
   - type: chantier
     planete: kcdq-prima
     batiment: extracteur_lumen
     niveau_cible: 1
-signature: ed25519:fKNXBiVZ03TOniQ1HwZbQJd49+x0rWPvTQgoUqgM1hNkpnFMLSDIWLjKSrZ+LWJkMh2qbscOfh/APtMhoIOSDQ==
+  - type: chantier
+    planete: kcdq-prima
+    batiment: depot
+    niveau_cible: 1
+signature: ed25519:IMu4HCy1NlYPitLlCEVt4XfeoYPEUjbHLSMHSReGvhM/lFwJU89OrwkLxF0nd59StwFAp5whajhgkleRB0M7Ag==
