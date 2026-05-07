@@ -2095,18 +2095,6 @@ async function signCanonical(canonical, pem) {
   return btoa(bin);
 }
 
-function buildOrdresYaml({ joueur, tickCible, planete, batiment, niveauCible, nonce }) {
-  return buildOrdresYamlOrders({
-    joueur, tickCible, nonce,
-    orderBlocks: [
-      `  - type: chantier
-    planete: ${planete}
-    batiment: ${batiment}
-    niveau_cible: ${niveauCible}`,
-    ],
-  });
-}
-
 function buildOrdresYamlOrders({ joueur, tickCible, nonce, orderBlocks }) {
   return `# Généré depuis la console (${new Date().toISOString()})
 version: 1
@@ -2117,6 +2105,51 @@ nonce: ${nonce}
 ordres:
 ${orderBlocks.join('\n')}
 `;
+}
+
+// Serialise un ordre (objet) en bloc YAML pour appender dans ordres.yaml.
+// Inverse de ce que yparse produit ; doit matcher le schema attendu par le moteur.
+function serializeOrder(o) {
+  if (o.type === 'chantier') return `  - type: chantier
+    planete: ${o.planete}
+    batiment: ${o.batiment}
+    niveau_cible: ${o.niveau_cible}`;
+  if (o.type === 'construction') return `  - type: construction
+    planete: ${o.planete}
+    unite: ${o.unite}
+    quantite: ${o.quantite}`;
+  if (o.type === 'recherche') return `  - type: recherche
+    technologie: ${o.technologie}
+    niveau_cible: ${o.niveau_cible}`;
+  if (o.type === 'espionnage') return `  - type: espionnage
+    depuis: ${o.depuis}
+    cible: { joueur: ${o.cible.joueur}, planete: ${o.cible.planete} }
+    nombre_sondes: ${o.nombre_sondes}`;
+  if (o.type === 'attaque') return `  - type: attaque
+    depuis: ${o.depuis}
+    cible: { joueur: ${o.cible.joueur}, planete: ${o.cible.planete} }
+    flotte: ${inlineMap(o.flotte)}`;
+  if (o.type === 'transport') return `  - type: transport
+    depuis: ${o.depuis}
+    cible: { joueur: ${o.cible.joueur}, planete: ${o.cible.planete} }
+    flotte: ${inlineMap(o.flotte)}
+    cargaison: ${inlineMap(o.cargaison || {})}`;
+  throw new Error(`serializeOrder: type inconnu "${o.type}"`);
+}
+
+// Empile un nouvel ordre dans ordres.yaml (ou repart d'une liste vide si l'ancien
+// ordres.yaml ciblait un tick deja consomme), puis push via PR.
+async function appendOrderAndPush(newOrder, message) {
+  const emp = state.players[state.current];
+  if (!emp) throw new Error('aucun joueur actif');
+  const tickCible = (state.manifest?.tick ?? 0) + 1;
+  const existing = emp._ordres && emp._ordres.tick_cible === tickCible ? emp._ordres : null;
+  const ordres = existing ? [...existing.ordres, newOrder] : [newOrder];
+  const nonce = randomNonce();
+  const orderBlocks = ordres.map(serializeOrder);
+  const body = buildOrdresYamlOrders({ joueur: state.current, tickCible, nonce, orderBlocks });
+  await pushSignedOrder(body, message);
+  emp._ordres = { tick_cible: tickCible, ordres };
 }
 
 // Sérialiseur YAML inline pour map { k: v, ... } — n'inclut que les valeurs > 0
@@ -2227,14 +2260,11 @@ async function submitImprove(batiment) {
   if (!canAfford(planete, cost)) { toast('Ressources insuffisantes', `${batiment} niv ${niveauCible} requiert plus que tes stocks.`, true); return; }
 
   const tickCible = (state.manifest?.tick ?? 0) + 1;
-  const nonce = randomNonce();
 
   state.pending.add(batiment); render();
   try {
-    const body = buildOrdresYaml({ joueur: state.current, tickCible, planete: planete.nom, batiment, niveauCible, nonce });
     const message = `${state.current}: chantier ${batiment} → niv ${niveauCible} (tick ${tickCible})`;
-    await pushSignedOrder(body, message);
-    emp._ordres = { tick_cible: tickCible, ordres: [{ type: 'chantier', planete: planete.nom, batiment, niveau_cible: niveauCible }] };
+    await appendOrderAndPush({ type: 'chantier', planete: planete.nom, batiment, niveau_cible: niveauCible }, message);
     toast('Ordre scellé', `${labels[batiment] || batiment} → niveau ${niveauCible}. Le moteur le traitera au tick ${tickCible}.`);
   } catch (e) {
     toast('Échec', e.message || String(e), true);
@@ -2259,18 +2289,11 @@ async function submitConstruction(planeteNom, unite, quantite) {
   if (!canAfford(planete, totalCost)) { toast('Ressources insuffisantes', `${quantite}× ${unite} dépasse tes stocks.`, true); return; }
 
   const tickCible = (state.manifest?.tick ?? 0) + 1;
-  const nonce = randomNonce();
 
   state.pending.add(pendingKey); render();
   try {
-    const block = `  - type: construction
-    planete: ${planeteNom}
-    unite: ${unite}
-    quantite: ${quantite}`;
-    const body = buildOrdresYamlOrders({ joueur: state.current, tickCible, nonce, orderBlocks: [block] });
     const message = `${state.current}: construction ${quantite}× ${unite} sur ${planeteNom} (tick ${tickCible})`;
-    await pushSignedOrder(body, message);
-    emp._ordres = { tick_cible: tickCible, ordres: [{ type: 'construction', planete: planeteNom, unite, quantite }] };
+    await appendOrderAndPush({ type: 'construction', planete: planeteNom, unite, quantite }, message);
     toast('Ordre scellé', `${quantite}× ${labels[unite] || unite} en construction sur ${planeteNom}.`);
   } catch (e) {
     toast('Échec', e.message || String(e), true);
@@ -2291,17 +2314,11 @@ async function submitRecherche(technologie, niveauCible) {
   if (!canAffordEmp(emp, cost)) { toast('Ressources insuffisantes', `Aucune planète ne peut payer ${technologie} niv ${niveauCible}.`, true); return; }
 
   const tickCible = (state.manifest?.tick ?? 0) + 1;
-  const nonce = randomNonce();
 
   state.pending.add(pendingKey); render();
   try {
-    const block = `  - type: recherche
-    technologie: ${technologie}
-    niveau_cible: ${niveauCible}`;
-    const body = buildOrdresYamlOrders({ joueur: state.current, tickCible, nonce, orderBlocks: [block] });
     const message = `${state.current}: recherche ${technologie} → niv ${niveauCible} (tick ${tickCible})`;
-    await pushSignedOrder(body, message);
-    emp._ordres = { tick_cible: tickCible, ordres: [{ type: 'recherche', technologie, niveau_cible: niveauCible }] };
+    await appendOrderAndPush({ type: 'recherche', technologie, niveau_cible: niveauCible }, message);
     toast('Ordre scellé', `${labels[technologie] || technologie} → niveau ${niveauCible}.`);
   } catch (e) {
     toast('Échec', e.message || String(e), true);
@@ -2316,49 +2333,27 @@ async function submitMission({ type, depuis, cibleJoueur, ciblePlanete, flotte, 
   if (!cfg.ready) { openSettings(); toast('Paramètres requis', 'Renseigne PAT, repo et clé pour signer un ordre.', true); return; }
 
   const tickCible = (state.manifest?.tick ?? 0) + 1;
-  const nonce = randomNonce();
 
-  let block;
-  const cibleStr = `{ joueur: ${cibleJoueur}, planete: ${ciblePlanete} }`;
+  // Validation et construction de l'ordre objet selon le type.
+  const cibleObj = { joueur: cibleJoueur, planete: ciblePlanete };
+  let orderObj;
   if (type === 'espionnage') {
     if (!nombreSondes || nombreSondes <= 0) { toast('Sondes requises', 'Au moins 1 sonde nécessaire.', true); return; }
-    block = `  - type: espionnage
-    depuis: ${depuis}
-    cible: ${cibleStr}
-    nombre_sondes: ${nombreSondes}`;
+    orderObj = { type, depuis, cible: cibleObj, nombre_sondes: nombreSondes };
   } else if (type === 'attaque') {
-    const flotteInline = inlineMap(flotte);
-    if (flotteInline === '{}') { toast('Flotte vide', 'Inclus au moins 1 vaisseau dans la composition.', true); return; }
-    block = `  - type: attaque
-    depuis: ${depuis}
-    cible: ${cibleStr}
-    flotte: ${flotteInline}`;
+    if (inlineMap(flotte) === '{}') { toast('Flotte vide', 'Inclus au moins 1 vaisseau dans la composition.', true); return; }
+    orderObj = { type, depuis, cible: cibleObj, flotte: { ...flotte } };
   } else if (type === 'transport') {
-    const flotteInline = inlineMap(flotte);
-    if (flotteInline === '{}') { toast('Flotte vide', 'Au moins 1 vaisseau de transport est requis.', true); return; }
-    const cargInline = inlineMap(cargaison);
-    block = `  - type: transport
-    depuis: ${depuis}
-    cible: ${cibleStr}
-    flotte: ${flotteInline}
-    cargaison: ${cargInline}`;
+    if (inlineMap(flotte) === '{}') { toast('Flotte vide', 'Au moins 1 vaisseau de transport est requis.', true); return; }
+    orderObj = { type, depuis, cible: cibleObj, flotte: { ...flotte }, cargaison: { ...(cargaison || {}) } };
   } else {
     toast('Type inconnu', type, true); return;
   }
 
   state.pending.add(pendingKey); render();
   try {
-    const body = buildOrdresYamlOrders({ joueur: state.current, tickCible, nonce, orderBlocks: [block] });
     const message = `${state.current}: ${type} ${depuis} → ${cibleJoueur}/${ciblePlanete} (tick ${tickCible})`;
-    await pushSignedOrder(body, message);
-    const cibleObj = { joueur: cibleJoueur, planete: ciblePlanete };
-    const orderObj = type === 'espionnage'
-      ? { type, depuis, cible: cibleObj, nombre_sondes: nombreSondes }
-      : type === 'attaque'
-        ? { type, depuis, cible: cibleObj, flotte: { ...flotte } }
-        : { type, depuis, cible: cibleObj, flotte: { ...flotte }, cargaison: { ...(cargaison || {}) } };
-    const emp = state.players[state.current];
-    if (emp) emp._ordres = { tick_cible: tickCible, ordres: [orderObj] };
+    await appendOrderAndPush(orderObj, message);
     toast('Mission scellée', `${type} · ${depuis} → ${cibleJoueur}/${ciblePlanete}.`);
     closeMission();
   } catch (e) {
