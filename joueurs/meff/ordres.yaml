@@ -1,12 +1,12 @@
-# Généré depuis la console (2026-05-07T11:34:30.723Z)
+# Généré depuis la console (2026-05-07T14:23:35.568Z)
 version: 1
 joueur: meff
-tick_cible: 22
-nonce: fdf3ee
+tick_cible: 34
+nonce: 3a62e9
 
 ordres:
   - type: chantier
     planete: meff-prima
-    batiment: mine_ferrum
-    niveau_cible: 3
-signature: ed25519:Js+U9UvdNe8wjDP9/X+8A7TKGmLsI5Q5Yu2aZZUvbd6hI0gWhaukuwenukQBSAiMy5Acw5eH6Pc6dBzsJfSoAg==
+    batiment: extracteur_lumen
+    niveau_cible: 1
+signature: ed25519:8s9ENWeg5yZ8c7zdsRtZvfn7rxjrwEO7Lj6zn4dNGOjt76NlyeQtdTVdowM8PhbbIfNKXOfuU0eIiZdRW1CeCQ==
