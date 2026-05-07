@@ -943,10 +943,10 @@ h2.sect .num {
     <label>Branche</label>
     <input id="cfgBranch" placeholder="main"/>
 
-    <label>Personal Access Token (fine-grained)</label>
+    <label>Personal Access Token (fine-grained ou classique)</label>
     <input id="cfgPat" type="password" placeholder="github_pat_..."/>
     <div class="hint">
-      <a href="https://github.com/settings/personal-access-tokens/new" target="_blank">Créer un PAT</a> avec <b>Contents: Read and write</b> sur ce repo. Stocké en localStorage.
+      <a href="https://github.com/settings/tokens?type=beta" target="_blank">Créer un PAT</a> avec <b>Contents: Read &amp; write</b> et <b>Pull requests: Read &amp; write</b> sur ce repo (ou un PAT classique avec scope <code>public_repo</code>). Stocké en localStorage.
     </div>
 
     <label>Clé privée Ed25519 (joueurs/&lt;toi&gt;/.key.pem)</label>
@@ -2142,53 +2142,74 @@ async function ghFetch(path, init = {}) {
   return r.json();
 }
 
-async function getOrdresFile(joueur) {
-  const path = `joueurs/${joueur}/ordres.yaml`;
-  try {
-    const j = await ghFetch(`/repos/${cfg.repo}/contents/${encodeURIComponent(path).replace(/%2F/g, '/')}?ref=${encodeURIComponent(cfg.branch)}`);
-    return { sha: j.sha, content: atob(j.content.replace(/\s/g, '')) };
-  } catch (e) {
-    if (/Not Found/i.test(e.message)) return { sha: null, content: '' };
-    throw e;
-  }
-}
-
-async function putOrdresFile(joueur, content, sha, message) {
-  const path = `joueurs/${joueur}/ordres.yaml`;
-  // base64 encode UTF-8 safe
-  const utf8 = new TextEncoder().encode(content);
-  let bin = '';
-  for (let i = 0; i < utf8.byteLength; i++) bin += String.fromCharCode(utf8[i]);
-  const b64 = btoa(bin);
-  return await ghFetch(`/repos/${cfg.repo}/contents/${encodeURIComponent(path).replace(/%2F/g, '/')}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message, branch: cfg.branch, content: b64, ...(sha ? { sha } : {}) }),
-  });
-}
-
 function randomNonce() {
   const a = new Uint8Array(3); crypto.getRandomValues(a);
   return [...a].map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-// Pousse un fichier ordres.yaml signé sur GitHub. Gère le retry sur conflit SHA.
+// Pousse un ordre signé : fork, branche orders/<nom>, push fichier, ouvre PR.
+// Le workflow validate-orders verifie la signature et auto-merge dans ~20s.
 async function pushSignedOrder(canonicalBody, message) {
-  // canonicalBody ne contient PAS la ligne `signature:` — match sign.mjs
   const canonical = canonicalBody.replace(/\s+$/, '') + '\n';
   const sig = await signCanonical(canonical, cfg.key);
   const finalContent = canonical + `signature: ed25519:${sig}\n`;
-  let attempt = 0;
-  while (true) {
-    const { sha } = await getOrdresFile(state.current);
-    try {
-      await putOrdresFile(state.current, finalContent, sha, message);
-      return;
-    } catch (e) {
-      attempt++;
-      if (attempt >= 2 || !/does not match|409/i.test(e.message)) throw e;
-      await new Promise(r => setTimeout(r, 400));
+  const player = state.current;
+  const [upOwner, upRepo] = cfg.repo.split('/');
+  const baseBranch = cfg.branch || 'main';
+  const branchName = `orders/${player}`;
+
+  // 1. Identite. Si l'user est owner de l'upstream : pas de fork (push direct sur upstream).
+  const me = await ghFetch('/user');
+  const isOwner = me.login.toLowerCase() === upOwner.toLowerCase();
+  const workRepo = isOwner ? `${upOwner}/${upRepo}` : `${me.login}/${upRepo}`;
+
+  if (!isOwner) {
+    // 1b. Fork (idempotent). Necessite PAT avec scope public_repo OU fine-grained "Administration: write".
+    await ghFetch(`/repos/${upOwner}/${upRepo}/forks`, { method: 'POST', body: JSON.stringify({}) });
+    for (let i = 0; i < 10; i++) {
+      try { await ghFetch(`/repos/${workRepo}`); break; }
+      catch (e) { if (i === 9) throw e; await new Promise(r => setTimeout(r, 1500)); }
     }
+    try { await ghFetch(`/repos/${workRepo}/merge-upstream`, { method: 'POST', body: JSON.stringify({ branch: baseBranch }) }); } catch {}
+  }
+
+  // 2. Reset (ou cree) orders/<nom> sur le tip de baseBranch.
+  const baseRef = await ghFetch(`/repos/${workRepo}/git/ref/heads/${baseBranch}`);
+  const baseSha = baseRef.object.sha;
+  try {
+    await ghFetch(`/repos/${workRepo}/git/refs`, { method: 'POST', body: JSON.stringify({ ref: `refs/heads/${branchName}`, sha: baseSha }) });
+  } catch (e) {
+    await ghFetch(`/repos/${workRepo}/git/refs/heads/${branchName}`, { method: 'PATCH', body: JSON.stringify({ sha: baseSha, force: true }) });
+  }
+
+  // 3. Push le fichier signe sur cette branche.
+  const path = `joueurs/${player}/ordres.yaml`;
+  let currentSha = null;
+  try { currentSha = (await ghFetch(`/repos/${workRepo}/contents/${path}?ref=${branchName}`)).sha; } catch {}
+  const utf8 = new TextEncoder().encode(finalContent);
+  let bin = ''; for (let i = 0; i < utf8.byteLength; i++) bin += String.fromCharCode(utf8[i]);
+  const b64 = btoa(bin);
+  await ghFetch(`/repos/${workRepo}/contents/${path}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, branch: branchName, content: b64, ...(currentSha ? { sha: currentSha } : {}) }),
+  });
+
+  // 4. Ouvre PR (head = "branchName" si meme repo, "user:branchName" si fork).
+  try {
+    await ghFetch(`/repos/${upOwner}/${upRepo}/pulls`, {
+      method: 'POST',
+      body: JSON.stringify({
+        title: message,
+        head: isOwner ? branchName : `${me.login}:${branchName}`,
+        base: baseBranch,
+        body: `Ordre signe depuis la console pour **${player}**.\n\nValide automatiquement par \`validate-orders\`. Auto-merge si signature et tick OK.`,
+        maintainer_can_modify: true,
+      }),
+    });
+  } catch (e) {
+    // 422 = PR deja ouverte — synchronize re-trigger le workflow, pas besoin d'agir.
+    if (!/already exists|422/i.test(e.message)) throw e;
   }
 }
 
@@ -2211,6 +2232,7 @@ async function submitImprove(batiment) {
     const body = buildOrdresYaml({ joueur: state.current, tickCible, planete: planete.nom, batiment, niveauCible, nonce });
     const message = `${state.current}: chantier ${batiment} → niv ${niveauCible} (tick ${tickCible})`;
     await pushSignedOrder(body, message);
+    emp._ordres = { tick_cible: tickCible, ordres: [{ type: 'chantier', planete: planete.nom, batiment, niveau_cible: niveauCible }] };
     toast('Ordre scellé', `${labels[batiment] || batiment} → niveau ${niveauCible}. Le moteur le traitera au tick ${tickCible}.`);
   } catch (e) {
     toast('Échec', e.message || String(e), true);
@@ -2246,6 +2268,7 @@ async function submitConstruction(planeteNom, unite, quantite) {
     const body = buildOrdresYamlOrders({ joueur: state.current, tickCible, nonce, orderBlocks: [block] });
     const message = `${state.current}: construction ${quantite}× ${unite} sur ${planeteNom} (tick ${tickCible})`;
     await pushSignedOrder(body, message);
+    emp._ordres = { tick_cible: tickCible, ordres: [{ type: 'construction', planete: planeteNom, unite, quantite }] };
     toast('Ordre scellé', `${quantite}× ${labels[unite] || unite} en construction sur ${planeteNom}.`);
   } catch (e) {
     toast('Échec', e.message || String(e), true);
@@ -2276,6 +2299,7 @@ async function submitRecherche(technologie, niveauCible) {
     const body = buildOrdresYamlOrders({ joueur: state.current, tickCible, nonce, orderBlocks: [block] });
     const message = `${state.current}: recherche ${technologie} → niv ${niveauCible} (tick ${tickCible})`;
     await pushSignedOrder(body, message);
+    emp._ordres = { tick_cible: tickCible, ordres: [{ type: 'recherche', technologie, niveau_cible: niveauCible }] };
     toast('Ordre scellé', `${labels[technologie] || technologie} → niveau ${niveauCible}.`);
   } catch (e) {
     toast('Échec', e.message || String(e), true);
@@ -2325,6 +2349,14 @@ async function submitMission({ type, depuis, cibleJoueur, ciblePlanete, flotte, 
     const body = buildOrdresYamlOrders({ joueur: state.current, tickCible, nonce, orderBlocks: [block] });
     const message = `${state.current}: ${type} ${depuis} → ${cibleJoueur}/${ciblePlanete} (tick ${tickCible})`;
     await pushSignedOrder(body, message);
+    const cibleObj = { joueur: cibleJoueur, planete: ciblePlanete };
+    const orderObj = type === 'espionnage'
+      ? { type, depuis, cible: cibleObj, nombre_sondes: nombreSondes }
+      : type === 'attaque'
+        ? { type, depuis, cible: cibleObj, flotte: { ...flotte } }
+        : { type, depuis, cible: cibleObj, flotte: { ...flotte }, cargaison: { ...(cargaison || {}) } };
+    const emp = state.players[state.current];
+    if (emp) emp._ordres = { tick_cible: tickCible, ordres: [orderObj] };
     toast('Mission scellée', `${type} · ${depuis} → ${cibleJoueur}/${ciblePlanete}.`);
     closeMission();
   } catch (e) {

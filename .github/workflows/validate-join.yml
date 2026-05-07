@@ -8,7 +8,9 @@ on:
   pull_request_target:
     types: [opened, synchronize, reopened]
     paths:
-      - 'joueurs/**'
+      - 'joueurs/**/identite.yaml'
+      - 'joueurs/**/empire.yaml'
+      - 'joueurs/**/empire.md'
       - 'world/galaxie.yaml'
 
 permissions:
