@@ -1,10 +1,18 @@
-// AETHERIS // PROTOCOL — Cloudflare Worker proxy pour le device flow GitHub.
+// AETHERIS // PROTOCOL — Cloudflare Worker (OAuth proxy + tick driver)
 //
-// GitHub ne sert pas d'en-tetes CORS sur /login/device/code et /login/oauth/access_token.
-// Ce Worker forward exactement ces deux endpoints et ajoute les CORS headers.
-// Stateless, public, ~20 lignes — l'URL deployee va dans CONFIG.oauthProxy de join.html.
+// Deux responsabilites :
+// 1. fetch() : proxy CORS pour le device flow GitHub
+//    (github.com/login/device/code et /login/oauth/access_token).
+// 2. scheduled() : trigger le workflow aetheris-tick toutes les 15 min via
+//    workflow_dispatch — contournement du cron unreliable de GitHub Actions.
 //
-// Deploy : `wrangler deploy worker.js` (ou copier-coller dans le dashboard Cloudflare).
+// Variables Cloudflare requises pour le tick driver :
+//   REPO    : "owner/repo" (ex: meffysto/aetheris-protocol)        [Variable]
+//   GH_PAT  : fine-grained PAT avec "Actions: Read & write" sur ce repo  [Secret]
+//
+// Cron trigger a configurer dans Settings > Triggers : `*/15 * * * *`
+//
+// Deploy : copier-coller dans le dashboard Cloudflare (Workers > Edit code).
 
 const ALLOWED = new Set(['/login/device/code', '/login/oauth/access_token']);
 const CORS = {
@@ -30,5 +38,28 @@ export default {
       status: upstream.status,
       headers: { ...CORS, 'Content-Type': upstream.headers.get('Content-Type') || 'application/json' },
     });
+  },
+
+  async scheduled(_event, env) {
+    if (!env.REPO || !env.GH_PAT) {
+      console.error('tick driver : REPO ou GH_PAT manquant dans les Variables');
+      return;
+    }
+    const r = await fetch(`https://api.github.com/repos/${env.REPO}/actions/workflows/tick.yml/dispatches`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${env.GH_PAT}`,
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+        'User-Agent': 'aetheris-tick-driver',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ ref: 'main' }),
+    });
+    if (!r.ok) {
+      console.error(`tick dispatch failed : HTTP ${r.status} ${await r.text()}`);
+    } else {
+      console.log(`tick dispatched on ${env.REPO} @ ${new Date().toISOString()}`);
+    }
   },
 };
