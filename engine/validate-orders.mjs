@@ -165,7 +165,11 @@ if (errors.length === 0) {
     if (ord.joueur !== NAME) fail(`ordres.joueur (${ord.joueur}) != ${NAME}`);
     if (typeof ord.tick_cible !== 'number') fail('ordres.tick_cible doit etre un nombre');
     else ordTickCible = ord.tick_cible;
-    if (typeof ord.nonce !== 'string' || !/^[a-f0-9]{4,16}$/.test(ord.nonce)) fail(`ordres.nonce invalide : "${ord.nonce}"`);
+    // Tolere les nonces hex 100% numeriques que le yparse interprete en number.
+    // La signature se verifie sur les bytes du fichier (qui contient bien la
+    // chaine d'origine), donc cette coercion n'affecte pas la securite.
+    const nonceStr = typeof ord.nonce === 'number' ? String(ord.nonce) : ord.nonce;
+    if (typeof nonceStr !== 'string' || !/^[a-f0-9]{4,16}$/.test(nonceStr)) fail(`ordres.nonce invalide : "${ord.nonce}"`);
     if (!Array.isArray(ord.ordres)) fail('ordres.ordres doit etre une liste');
   }
 }

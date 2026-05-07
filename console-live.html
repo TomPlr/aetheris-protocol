@@ -2221,11 +2221,13 @@ async function signCanonical(canonical, pem) {
 }
 
 function buildOrdresYamlOrders({ joueur, tickCible, nonce, orderBlocks }) {
+  // Le nonce est quote pour rester une string YAML — sinon un nonce 100% digits
+  // (ex: "362100") serait parse en number par le validateur et rejete.
   return `# Généré depuis la console (${new Date().toISOString()})
 version: 1
 joueur: ${joueur}
 tick_cible: ${tickCible}
-nonce: ${nonce}
+nonce: "${nonce}"
 
 ordres:
 ${orderBlocks.join('\n')}
