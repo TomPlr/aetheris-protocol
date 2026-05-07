@@ -1010,11 +1010,24 @@ h2.sect .num {
 
     <input id="cfgRepo" type="hidden"/>
     <input id="cfgBranch" type="hidden"/>
+    <input id="cfgPat" type="hidden"/>
 
-    <label>Personal Access Token (fine-grained ou classique)</label>
-    <input id="cfgPat" type="password" placeholder="github_pat_..."/>
-    <div class="hint">
-      <a href="https://github.com/settings/tokens?type=beta" target="_blank">Créer un PAT</a> avec <b>Contents: Read &amp; write</b> et <b>Pull requests: Read &amp; write</b> sur ce repo (ou un PAT classique avec scope <code>public_repo</code>). Stocké en localStorage.
+    <label>Authentification GitHub</label>
+    <div id="oauthIdle">
+      <button class="primary" id="oauthConnect" type="button">Se connecter à GitHub</button>
+      <div class="hint">Tu seras redirigé pour entrer un code à 8 caractères. Aucun PAT à créer.</div>
+    </div>
+    <div id="oauthFlow" hidden>
+      <div class="hint" style="margin-top:0">Ouvre <a id="oauthUrl" target="_blank" rel="noopener">github.com/login/device</a> et entre le code :</div>
+      <div style="font-family:var(--mono); font-size:22px; letter-spacing:0.3em; color:var(--brass); padding:14px 18px; background:var(--ink-3); border-radius:8px; text-align:center; margin:8px 0; user-select:all"><span id="oauthCode">—</span></div>
+      <div class="hint" id="oauthStatus">En attente de ton autorisation…</div>
+    </div>
+    <div id="oauthDone" hidden>
+      <div style="display:flex; align-items:center; gap:10px; padding:10px 14px; background:var(--ink-3); border-radius:8px;">
+        <span style="color:var(--green); font-weight:700">✓</span>
+        <span>Connecté en tant que <b id="oauthUser" style="font-family:var(--mono)">—</b></span>
+        <button class="ghost" id="oauthLogout" type="button" style="margin-left:auto; font-size:11px">Déconnecter</button>
+      </div>
     </div>
 
     <label>Clé privée Ed25519 (joueurs/&lt;toi&gt;/.key.pem)</label>
@@ -1297,6 +1310,11 @@ if (state.current) localStorage.setItem('aetheris.player', state.current);
 // pour eviter qu'un joueur pointe par erreur vers son propre fork.
 const UPSTREAM_REPO = 'meffysto/aetheris-protocol';
 const UPSTREAM_BRANCH = 'main';
+// OAuth Device Flow — meme app/proxy que join.html. Le token recu va dans
+// localStorage 'aetheris.gh.pat' (peu importe son origine, c'est un Bearer
+// token GitHub). Plus aucune creation manuelle de PAT exigee du joueur.
+const OAUTH_CLIENT_ID = 'Ov23li7ZHGzhrDKFTeXl';
+const OAUTH_PROXY = 'https://aetheris-oauth-proxy.meffysto.workers.dev';
 const cfg = {
   get repo()   { return UPSTREAM_REPO; },
   set repo(_)  { /* hardcode, no-op */ },
@@ -2515,12 +2533,114 @@ async function submitMission({ type, depuis, cibleJoueur, ciblePlanete, flotte, 
   }
 }
 
+/* ───────────────────────────── OAuth Device Flow ────────────────────────── */
+// Reutilise l'OAuth App + worker proxy de join.html. Le token recu remplace
+// le PAT manuel, mais est stocke sous la meme cle (cfg.pat) — c'est juste
+// un Bearer token aux yeux de l'API GitHub.
+
+let oauthPolling = false;
+
+async function refreshOauthUI() {
+  const idle = document.getElementById('oauthIdle');
+  const flow = document.getElementById('oauthFlow');
+  const done = document.getElementById('oauthDone');
+  if (!cfg.pat) {
+    idle.hidden = false; flow.hidden = true; done.hidden = true;
+    return;
+  }
+  // Token present — verifier qu'il marche encore et recuperer le login.
+  try {
+    const r = await fetch('https://api.github.com/user', {
+      headers: { Authorization: `Bearer ${cfg.pat}`, Accept: 'application/vnd.github+json' },
+    });
+    if (r.ok) {
+      const me = await r.json();
+      document.getElementById('oauthUser').textContent = me.login;
+      idle.hidden = true; flow.hidden = true; done.hidden = false;
+      return;
+    }
+  } catch {}
+  // Token expire/revoque — reset
+  cfg.pat = '';
+  idle.hidden = false; flow.hidden = true; done.hidden = true;
+}
+
+async function oauthDeviceFlow() {
+  if (oauthPolling) return;
+  oauthPolling = true;
+  const idle = document.getElementById('oauthIdle');
+  const flow = document.getElementById('oauthFlow');
+  const status = document.getElementById('oauthStatus');
+  try {
+    const r1 = await fetch(`${OAUTH_PROXY}/login/device/code`, {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ client_id: OAUTH_CLIENT_ID, scope: 'public_repo' }),
+    });
+    if (!r1.ok) throw new Error(`device/code HTTP ${r1.status}`);
+    const dev = await r1.json();
+
+    idle.hidden = true;
+    flow.hidden = false;
+    document.getElementById('oauthUrl').href = dev.verification_uri;
+    document.getElementById('oauthUrl').textContent = dev.verification_uri.replace(/^https?:\/\//, '');
+    document.getElementById('oauthCode').textContent = dev.user_code;
+    status.textContent = 'En attente de ton autorisation…';
+    window.open(dev.verification_uri, '_blank', 'noopener');
+
+    const interval = (dev.interval || 5) * 1000;
+    const deadline = Date.now() + (dev.expires_in || 900) * 1000;
+    while (Date.now() < deadline) {
+      await new Promise(r => setTimeout(r, interval));
+      const r2 = await fetch(`${OAUTH_PROXY}/login/oauth/access_token`, {
+        method: 'POST',
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          client_id: OAUTH_CLIENT_ID,
+          device_code: dev.device_code,
+          grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
+        }),
+      });
+      const data = await r2.json();
+      if (data.access_token) {
+        cfg.pat = data.access_token;
+        await refreshOauthUI();
+        toast('Connecté à GitHub', 'Tu peux maintenant signer et pousser des ordres.');
+        render();
+        return;
+      }
+      if (data.error === 'authorization_pending' || data.error === 'slow_down') {
+        status.textContent = 'En attente de ton autorisation…';
+        continue;
+      }
+      throw new Error(`OAuth: ${data.error}${data.error_description ? ' — ' + data.error_description : ''}`);
+    }
+    throw new Error('Code expire avant autorisation. Re-clique pour recommencer.');
+  } catch (e) {
+    status.textContent = '';
+    flow.hidden = true;
+    idle.hidden = false;
+    toast('Connexion échouée', e.message || String(e), true);
+  } finally {
+    oauthPolling = false;
+  }
+}
+
+document.getElementById('oauthConnect').onclick = oauthDeviceFlow;
+document.getElementById('oauthLogout').onclick = () => {
+  cfg.pat = '';
+  refreshOauthUI();
+  toast('Déconnecté', 'Tu devras te reconnecter pour signer un nouvel ordre.');
+  render();
+};
+
 /* ───────────────────────────── Settings modal ───────────────────────────── */
 function openSettings() {
   document.getElementById('cfgRepo').value = cfg.repo;
   document.getElementById('cfgBranch').value = cfg.branch;
   document.getElementById('cfgPat').value = cfg.pat;
   document.getElementById('cfgKey').value = cfg.key;
+  refreshOauthUI();
   document.getElementById('modalBg').classList.add('on');
 }
 function closeSettings() { document.getElementById('modalBg').classList.remove('on'); }
@@ -2545,14 +2665,20 @@ document.getElementById('gearBtn').onclick = openSettings;
 document.getElementById('cfgCancel').onclick = closeSettings;
 document.getElementById('modalBg').onclick = e => { if (e.target.id === 'modalBg') closeSettings(); };
 document.getElementById('cfgSave').onclick = () => {
-  cfg.pat    = document.getElementById('cfgPat').value.trim();
-  cfg.key    = document.getElementById('cfgKey').value.trim();
+  // Le PAT/access_token est gere par le bloc OAuth — on ne sauvegarde que la cle.
+  cfg.key = document.getElementById('cfgKey').value.trim();
   closeSettings();
-  toast('Sceau apposé', cfg.ready ? 'Tu peux maintenant donner des ordres depuis la console.' : 'PAT et clé requis.');
+  if (cfg.ready) {
+    toast('Sceau apposé', 'Tu peux maintenant donner des ordres depuis la console.');
+  } else if (!cfg.pat) {
+    toast('Connexion GitHub requise', 'Clique "Se connecter à GitHub" pour pouvoir signer.', true);
+  } else {
+    toast('Clé manquante', 'Colle ton .key.pem pour activer la signature.', true);
+  }
   render();
 };
 document.getElementById('cfgClear').onclick = () => {
-  if (!confirm('Effacer PAT et clé de ce navigateur ?')) return;
+  if (!confirm('Effacer connexion GitHub et clé de ce navigateur ?')) return;
   cfg.pat = ''; cfg.key = '';
   openSettings();
 };
