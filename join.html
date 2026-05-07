@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Aetheris // Inscription</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  :root { --bg:#0a0d12; --fg:#d8e0e8; --dim:#7a8896; --acc:#6dc2ca; --warn:#d27d2c; --err:#d04648; --ok:#346524; --line:#1d2530; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:14px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }
+  main { width:100%; max-width:560px; }
+  h1 { font-size:18px; letter-spacing:.18em; color:var(--acc); margin:0 0 4px; text-transform:uppercase; }
+  .sub { color:var(--dim); margin:0 0 24px; }
+  .card { background:#10161e; border:1px solid var(--line); border-radius:6px; padding:20px; }
+  label { display:block; color:var(--dim); margin-bottom:6px; font-size:12px; text-transform:uppercase; letter-spacing:.1em; }
+  input { width:100%; background:#0a0d12; border:1px solid var(--line); color:var(--fg); padding:10px 12px; border-radius:4px; font:inherit; }
+  input:focus { outline:none; border-color:var(--acc); }
+  button { background:var(--acc); color:#0a0d12; border:0; padding:10px 18px; border-radius:4px; font:inherit; font-weight:600; cursor:pointer; letter-spacing:.05em; }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  button.ghost { background:transparent; color:var(--fg); border:1px solid var(--line); }
+  .step { display:none; }
+  .step.active { display:block; }
+  .log { background:#070a0e; border:1px solid var(--line); border-radius:4px; padding:12px; font-size:12px; color:var(--dim); max-height:280px; overflow-y:auto; margin-top:16px; white-space:pre-wrap; }
+  .log .ok { color:var(--acc); }
+  .log .err { color:var(--err); }
+  .log .warn { color:var(--warn); }
+  .code { display:inline-block; background:#070a0e; border:1px solid var(--acc); padding:8px 14px; border-radius:4px; font-size:20px; letter-spacing:.3em; color:var(--acc); font-weight:600; }
+  a { color:var(--acc); }
+  .err-box { background:#1c0c0c; border:1px solid var(--err); color:#f5b8b8; padding:10px 12px; border-radius:4px; margin-top:12px; font-size:13px; }
+  .hint { font-size:12px; color:var(--dim); margin-top:6px; }
+  .row { display:flex; gap:8px; align-items:center; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Aetheris // Inscription</h1>
+  <p class="sub">Une cle. Une planete. Une PR. Bienvenue.</p>
+
+  <div class="card">
+    <!-- Step 1 : nom + keygen -->
+    <section id="step-name" class="step active">
+      <label for="name">Pseudo (2-16 chars, [a-z0-9-], commence par une lettre)</label>
+      <input id="name" autocomplete="off" autofocus placeholder="kael">
+      <div id="name-err" class="err-box" hidden></div>
+      <div class="hint">Ce nom sera ton identifiant publique et ton dossier dans le repo.</div>
+      <div style="margin-top:16px">
+        <button id="btn-generate">Generer ma cle</button>
+      </div>
+    </section>
+
+    <!-- Step 2 : telecharge cle privee -->
+    <section id="step-key" class="step">
+      <label>Cle privee Ed25519 generee</label>
+      <p style="color:var(--warn); margin:0 0 8px">Telecharge ce fichier MAINTENANT et garde-le secret. Il ne sera jamais reaffiche. Sans lui, tu ne peux plus signer d'ordres.</p>
+      <button id="btn-download">Telecharger .key.pem</button>
+      <div class="hint">Place-le dans <code>joueurs/&lt;ton-pseudo&gt;/.key.pem</code> (mode 600) si tu joues en local.</div>
+      <div style="margin-top:16px">
+        <button id="btn-key-ok" disabled>J'ai telecharge — continuer</button>
+      </div>
+    </section>
+
+    <!-- Step 3 : OAuth device flow -->
+    <section id="step-oauth" class="step">
+      <label>Authentification GitHub (Device Flow)</label>
+      <p style="margin:0 0 8px">Ouvre cette URL et entre le code :</p>
+      <p><a id="dev-url" target="_blank" rel="noopener"></a></p>
+      <p>Code : <span id="dev-code" class="code"></span></p>
+      <div class="hint">On poll GitHub jusqu'a ce que tu autorises l'app.</div>
+      <div id="oauth-err" class="err-box" hidden></div>
+    </section>
+
+    <!-- Step 4 : execution PR -->
+    <section id="step-pr" class="step">
+      <label>Creation de la PR d'inscription</label>
+      <div id="pr-log" class="log"></div>
+    </section>
+
+    <!-- Step 5 : done -->
+    <section id="step-done" class="step">
+      <label style="color:var(--acc)">Bienvenue dans Aetheris</label>
+      <p>Ta PR a ete <strong>auto-mergee</strong>. Tu controles desormais <span id="done-planet"></span>.</p>
+      <p><a id="done-pr-link" target="_blank" rel="noopener">Voir la PR</a></p>
+      <div style="margin-top:16px">
+        <button id="btn-console">Ouvrir la console</button>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script type="module">
+// ============================================================================
+// CONFIG — a editer selon le serveur
+// ============================================================================
+const CONFIG = {
+  // Repo cible (owner/repo). C'est la-dedans qu'on ouvre la PR.
+  upstream: 'aetheris/alpha-7',
+  // GitHub OAuth App "Device Flow" client_id (public, peut etre commit).
+  // Cree-le sur https://github.com/settings/developers (Enable Device Flow = ON).
+  clientId: 'Iv1.PLACEHOLDER_CLIENT_ID',
+  // Proxy CORS pour les endpoints OAuth de github.com (qui ne servent pas d'en-tetes CORS).
+  // Deploie engine/oauth-proxy/worker.js sur Cloudflare Workers et colle l'URL deployee ici
+  // (sans trailing slash). Le Worker forward /login/device/code et /login/oauth/access_token.
+  oauthProxy: '',
+  // Nom de la branche principale du repo.
+  defaultBranch: 'main',
+};
+// ============================================================================
+
+const NAME_RE = /^[a-z][a-z0-9-]{1,15}$/;
+const $ = (id) => document.getElementById(id);
+const show = (id) => { document.querySelectorAll('.step').forEach(s => s.classList.remove('active')); $(id).classList.add('active'); };
+
+const log = (msg, kind='') => {
+  const el = $('pr-log');
+  const span = document.createElement('div');
+  if (kind) span.className = kind;
+  span.textContent = msg;
+  el.appendChild(span);
+  el.scrollTop = el.scrollHeight;
+};
+
+// State
+const state = { name:'', privPem:'', pubB64:'', token:'', forkOwner:'', branch:'', pr:null, planet:null };
+
+// ============================================================================
+// 1. Crypto Ed25519 (Web Crypto)
+// ============================================================================
+async function generateKeypair() {
+  const kp = await crypto.subtle.generateKey({ name:'Ed25519' }, true, ['sign','verify']);
+  const pkcs8 = await crypto.subtle.exportKey('pkcs8', kp.privateKey);
+  const spki = await crypto.subtle.exportKey('spki', kp.publicKey);
+  return {
+    privPem: pemEncode(pkcs8, 'PRIVATE KEY'),
+    pubB64: btoa(String.fromCharCode(...new Uint8Array(spki))),
+  };
+}
+function pemEncode(buf, label) {
+  const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
+  const lines = b64.match(/.{1,64}/g).join('\n');
+  return `-----BEGIN ${label}-----\n${lines}\n-----END ${label}-----\n`;
+}
+
+// ============================================================================
+// 2. OAuth Device Flow
+// ============================================================================
+async function deviceFlow() {
+  const base = CONFIG.oauthProxy || 'https://github.com';
+  // Step 1 : demander un device_code
+  const r1 = await fetch(`${base}/login/device/code`, {
+    method:'POST',
+    headers:{ 'Accept':'application/json', 'Content-Type':'application/json' },
+    body: JSON.stringify({ client_id: CONFIG.clientId, scope: 'public_repo' }),
+  });
+  if (!r1.ok) throw new Error(`device/code HTTP ${r1.status} — verifie clientId et oauthProxy`);
+  const dev = await r1.json();
+  $('dev-url').textContent = dev.verification_uri;
+  $('dev-url').href = dev.verification_uri;
+  $('dev-code').textContent = dev.user_code;
+
+  // Step 2 : poll
+  const interval = (dev.interval || 5) * 1000;
+  const deadline = Date.now() + (dev.expires_in || 900) * 1000;
+  while (Date.now() < deadline) {
+    await new Promise(r => setTimeout(r, interval));
+    const r2 = await fetch(`${base}/login/oauth/access_token`, {
+      method:'POST',
+      headers:{ 'Accept':'application/json', 'Content-Type':'application/json' },
+      body: JSON.stringify({
+        client_id: CONFIG.clientId,
+        device_code: dev.device_code,
+        grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
+      }),
+    });
+    const data = await r2.json();
+    if (data.access_token) return data.access_token;
+    if (data.error === 'authorization_pending' || data.error === 'slow_down') continue;
+    throw new Error(`OAuth: ${data.error} — ${data.error_description || ''}`);
+  }
+  throw new Error('Code expire avant autorisation.');
+}
+
+// ============================================================================
+// 3. GitHub API helpers
+// ============================================================================
+async function gh(path, init = {}) {
+  const r = await fetch(`https://api.github.com${path}`, {
+    ...init,
+    headers: {
+      Authorization: `Bearer ${state.token}`,
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+      ...(init.headers || {}),
+    },
+  });
+  if (!r.ok) {
+    const txt = await r.text();
+    throw new Error(`GitHub ${init.method || 'GET'} ${path} -> ${r.status}: ${txt}`);
+  }
+  return r.status === 204 ? null : r.json();
+}
+const b64utf8 = (s) => btoa(unescape(encodeURIComponent(s)));
+
+async function getFile(owner, repo, path, ref) {
+  return gh(`/repos/${owner}/${repo}/contents/${path}?ref=${ref}`);
+}
+async function putFile(owner, repo, path, content, branch, message) {
+  return gh(`/repos/${owner}/${repo}/contents/${path}`, {
+    method: 'PUT',
+    body: JSON.stringify({ message, content: b64utf8(content), branch }),
+  });
+}
+async function updateFile(owner, repo, path, content, branch, message, sha) {
+  return gh(`/repos/${owner}/${repo}/contents/${path}`, {
+    method: 'PUT',
+    body: JSON.stringify({ message, content: b64utf8(content), branch, sha }),
+  });
+}
+
+// ============================================================================
+// 4. Trouve une planete libre dans galaxie.yaml (regex simple, format stable)
+// ============================================================================
+function pickFreePlanet(galaxieText) {
+  const lines = galaxieText.split('\n');
+  let currentSys = null, fallback = null, chosen = null, lineIdx = -1, classe = null;
+  for (let i = 0; i < lines.length; i++) {
+    const sm = lines[i].match(/^\s+"(\d+):(\d+)":/);
+    if (sm) { currentSys = [parseInt(sm[1]), parseInt(sm[2])]; continue; }
+    const pm = lines[i].match(/^\s+(\d+):\s*\{\s*type:\s*planete,\s*proprietaire:\s*null,\s*classe:\s*(\w+)\s*\}/);
+    if (pm && currentSys) {
+      const pos = parseInt(pm[1]);
+      if (pm[2] === 'tellurique') { chosen = { coords:[...currentSys, pos], classe:'tellurique', lineIdx:i }; break; }
+      if (!fallback) fallback = { coords:[...currentSys, pos], classe:pm[2], lineIdx:i };
+    }
+  }
+  return chosen || fallback;
+}
+
+// ============================================================================
+// 5. Compose les 4 fichiers + nouvelle ligne galaxie
+// ============================================================================
+function buildArtifacts({ name, pubB64, tick, planet }) {
+  const planetName = `${name}-prima`;
+  const champsTotal = planet.classe === 'tellurique' ? 240 : planet.classe === 'cristalline' ? 175 : 150;
+  const date = new Date().toISOString();
+  const nonce = Array.from(crypto.getRandomValues(new Uint8Array(3))).map(b => b.toString(16).padStart(2,'0')).join('');
+
+  const identite = `version: 1
+nom: ${name}
+cle_publique: ed25519:${pubB64}
+date_inscription: ${date}
+alliance: ~
+`;
+  const empire = `# Genere a l'inscription par join.html.
+version: 1
+joueur: ${name}
+tick: ${tick}
+score_total: 0
+points_militaires: 0
+rang: 999
+alliance: ~
+planetes:
+  - nom: ${planetName}
+    coordonnees: [${planet.coords.join(', ')}]
+    type: ${planet.classe}
+    champs:
+      utilises: 0
+      total: ${champsTotal}
+    ressources:
+      ferrum:
+        stock: 500
+        production_par_utj: 30
+        capacite: 100000
+      lumen:
+        stock: 500
+        production_par_utj: 20
+        capacite: 100000
+      plasmide:
+        stock: 0
+        production_par_utj: 0
+        capacite: 100000
+    energie:
+      production: 0
+      consommation: 0
+    batiments:
+      mine_ferrum: 0
+      extracteur_lumen: 0
+      synthetiseur_plasmide: 0
+      centrale_solaire: 0
+      depot: 0
+      usine_robotique: 0
+      chantier_spatial: 0
+      laboratoire: 0
+    file_chantier: []
+    file_construction: []
+    flotte_au_sol: {}
+    defenses: {}
+flottes_en_vol: []
+recherche: {}
+file_recherche: []
+`;
+  const empireMd = `# Empire de ${name}\n\n> Tick ${tick} · planete **${planetName}** (${planet.coords.join(':')}) · *${planet.classe}*\n\nFresh start. Edite \`ordres.yaml\` pour donner ton premier ordre.\n`;
+  const ordres = `# Premier ordre — exemple : upgrade ta mine de ferrum.
+version: 1
+joueur: ${name}
+tick_cible: ${tick + 1}
+nonce: ${nonce}
+
+ordres: []
+`;
+  return { identite, empire, empireMd, ordres, planetName };
+}
+
+function patchGalaxieLine(line, name, planetName) {
+  return line.replace(
+    /\{\s*type:\s*planete,\s*proprietaire:\s*null,\s*classe:\s*(\w+)\s*\}/,
+    `{ type: planete, proprietaire: ${name}, nom: ${planetName}, classe: $1 }`
+  );
+}
+
+// ============================================================================
+// 6. Pipeline complet
+// ============================================================================
+async function runPipeline() {
+  const { upstream, defaultBranch } = CONFIG;
+  const [upOwner, upRepo] = upstream.split('/');
+  const name = state.name;
+
+  log(`> verifie que joueurs/${name}/ n'existe pas deja...`);
+  try {
+    await getFile(upOwner, upRepo, `joueurs/${name}/identite.yaml`, defaultBranch);
+    throw new Error(`Le joueur "${name}" existe deja sur ${upstream}.`);
+  } catch (e) { if (!String(e).includes('-> 404')) throw e; }
+  log(`  ok, libre.`, 'ok');
+
+  log(`> qui suis-je sur GitHub ?`);
+  const me = await gh('/user');
+  state.forkOwner = me.login;
+  log(`  authentifie : ${me.login}`, 'ok');
+
+  log(`> fork ${upstream} -> ${me.login}/${upRepo} ...`);
+  await gh(`/repos/${upOwner}/${upRepo}/forks`, { method:'POST', body: JSON.stringify({}) });
+  // wait for fork repo to be ready
+  for (let i = 0; i < 20; i++) {
+    try { await gh(`/repos/${me.login}/${upRepo}`); break; }
+    catch (e) { if (i === 19) throw e; await new Promise(r => setTimeout(r, 1500)); }
+  }
+  log(`  fork pret.`, 'ok');
+
+  log(`> sync fork sur ${defaultBranch}...`);
+  try {
+    await gh(`/repos/${me.login}/${upRepo}/merge-upstream`, {
+      method:'POST', body: JSON.stringify({ branch: defaultBranch }),
+    });
+  } catch { /* premier fork = deja a jour */ }
+
+  log(`> recupere world/galaxie.yaml et world/manifest.yaml...`);
+  const galFile = await getFile(me.login, upRepo, 'world/galaxie.yaml', defaultBranch);
+  const manFile = await getFile(me.login, upRepo, 'world/manifest.yaml', defaultBranch);
+  const galaxieText = decodeURIComponent(escape(atob(galFile.content.replace(/\n/g, ''))));
+  const manifestText = decodeURIComponent(escape(atob(manFile.content.replace(/\n/g, ''))));
+  const tick = parseInt((manifestText.match(/^tick:\s*(\d+)/m) || [,'0'])[1], 10);
+  log(`  tick courant : ${tick}`, 'ok');
+
+  log(`> cherche une planete libre...`);
+  const planet = pickFreePlanet(galaxieText);
+  if (!planet) throw new Error('Aucune planete libre dans la galaxie.');
+  state.planet = planet;
+  log(`  ${planet.coords.join(':')} (${planet.classe})`, 'ok');
+
+  log(`> cree branche join/${name}...`);
+  const baseRef = await gh(`/repos/${me.login}/${upRepo}/git/ref/heads/${defaultBranch}`);
+  state.branch = `join/${name}`;
+  try {
+    await gh(`/repos/${me.login}/${upRepo}/git/refs`, {
+      method:'POST',
+      body: JSON.stringify({ ref:`refs/heads/${state.branch}`, sha: baseRef.object.sha }),
+    });
+  } catch (e) {
+    if (String(e).includes('Reference already exists')) log(`  branche existait deja, on reutilise.`, 'warn');
+    else throw e;
+  }
+
+  log(`> compose les 4 fichiers joueur...`);
+  const art = buildArtifacts({ name, pubB64: state.pubB64, tick, planet });
+
+  const commitMsg = `inscription: ${name}`;
+  log(`> push joueurs/${name}/identite.yaml`);
+  await putFile(me.login, upRepo, `joueurs/${name}/identite.yaml`, art.identite, state.branch, commitMsg);
+  log(`> push joueurs/${name}/empire.yaml`);
+  await putFile(me.login, upRepo, `joueurs/${name}/empire.yaml`, art.empire, state.branch, commitMsg);
+  log(`> push joueurs/${name}/empire.md`);
+  await putFile(me.login, upRepo, `joueurs/${name}/empire.md`, art.empireMd, state.branch, commitMsg);
+  log(`> push joueurs/${name}/ordres.yaml`);
+  await putFile(me.login, upRepo, `joueurs/${name}/ordres.yaml`, art.ordres, state.branch, commitMsg);
+
+  log(`> reserve la planete dans world/galaxie.yaml...`);
+  // On part du contenu courant de la branche (qui peut differer si la branche existait).
+  const galOnBranch = await getFile(me.login, upRepo, 'world/galaxie.yaml', state.branch);
+  const galTextBranch = decodeURIComponent(escape(atob(galOnBranch.content.replace(/\n/g, ''))));
+  const lines = galTextBranch.split('\n');
+  // Re-trouver la ligne sur la branche (peut avoir bouge si tick recent)
+  const planetReFresh = pickFreePlanet(galTextBranch);
+  if (!planetReFresh) throw new Error('Planete devenue indisponible entre-temps.');
+  const idx = planetReFresh.lineIdx;
+  lines[idx] = patchGalaxieLine(lines[idx], name, art.planetName);
+  await updateFile(me.login, upRepo, 'world/galaxie.yaml', lines.join('\n'), state.branch, commitMsg, galOnBranch.sha);
+  state.planet = planetReFresh;
+
+  log(`> ouvre la PR vers ${upstream}...`);
+  const pr = await gh(`/repos/${upOwner}/${upRepo}/pulls`, {
+    method:'POST',
+    body: JSON.stringify({
+      title: `inscription: ${name}`,
+      head: `${me.login}:${state.branch}`,
+      base: defaultBranch,
+      body: `Inscription **${name}** — claim ${planetReFresh.coords.join(':')} (${planetReFresh.classe}).\n\nGenere automatiquement par \`join.html\`. Le workflow \`validate-join\` va verifier le diff et auto-merger si tout est conforme.`,
+      maintainer_can_modify: true,
+    }),
+  });
+  state.pr = pr;
+  log(`  PR #${pr.number} : ${pr.html_url}`, 'ok');
+
+  log(`> attend la validation et l'auto-merge...`);
+  const merged = await pollMerge(upOwner, upRepo, pr.number);
+  if (!merged) throw new Error('PR non mergee — voir les commentaires sur la PR.');
+  log(`  PR mergee. Welcome.`, 'ok');
+}
+
+async function pollMerge(owner, repo, num) {
+  for (let i = 0; i < 90; i++) {
+    await new Promise(r => setTimeout(r, 4000));
+    const pr = await gh(`/repos/${owner}/${repo}/pulls/${num}`);
+    if (pr.merged) return true;
+    if (pr.state === 'closed' && !pr.merged) return false;
+    if (i % 4 === 0) log(`  ...en attente (${i*4}s)`);
+  }
+  throw new Error('Timeout (6 min) sans merge.');
+}
+
+// ============================================================================
+// 7. UI wiring
+// ============================================================================
+$('btn-generate').addEventListener('click', async () => {
+  const name = $('name').value.trim().toLowerCase();
+  $('name-err').hidden = true;
+  if (!NAME_RE.test(name)) {
+    $('name-err').textContent = 'Pseudo invalide. 2-16 chars, [a-z0-9-], commence par une lettre.';
+    $('name-err').hidden = false;
+    return;
+  }
+  state.name = name;
+  $('btn-generate').disabled = true;
+  $('btn-generate').textContent = 'Generation...';
+  try {
+    const kp = await generateKeypair();
+    state.privPem = kp.privPem;
+    state.pubB64 = kp.pubB64;
+    show('step-key');
+  } catch (e) {
+    $('name-err').textContent = `Crypto error : ${e.message}. Ed25519 requis (Chrome 113+/Firefox 130+/Safari 17+).`;
+    $('name-err').hidden = false;
+    $('btn-generate').disabled = false;
+    $('btn-generate').textContent = 'Generer ma cle';
+  }
+});
+
+$('btn-download').addEventListener('click', () => {
+  const blob = new Blob([state.privPem], { type:'application/x-pem-file' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${state.name}.key.pem`;
+  a.click();
+  URL.revokeObjectURL(url);
+  $('btn-key-ok').disabled = false;
+});
+
+$('btn-key-ok').addEventListener('click', async () => {
+  show('step-oauth');
+  try {
+    state.token = await deviceFlow();
+    show('step-pr');
+    await runPipeline();
+    $('done-planet').textContent = `${state.name}-prima en ${state.planet.coords.join(':')} (${state.planet.classe})`;
+    $('done-pr-link').href = state.pr.html_url;
+    $('done-pr-link').textContent = `#${state.pr.number} sur ${CONFIG.upstream}`;
+    show('step-done');
+  } catch (e) {
+    if (document.querySelector('#step-oauth.active')) {
+      $('oauth-err').textContent = e.message;
+      $('oauth-err').hidden = false;
+    } else {
+      log(`ERREUR : ${e.message}`, 'err');
+    }
+  }
+});
+
+$('btn-console').addEventListener('click', () => {
+  location.href = `console.html?joueur=${encodeURIComponent(state.name)}`;
+});
+</script>
+</body>
+</html>
