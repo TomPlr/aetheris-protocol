@@ -11,7 +11,7 @@ systemes:
       4: { type: planete, proprietaire: kael, nom: kael-prima, classe: tellurique }
       5: { type: asteroide }
       6: { type: asteroide }
-      7: { type: planete, proprietaire: null, classe: tellurique }
+      7: { type: planete, proprietaire: testbot, nom: testbot-prima, classe: tellurique }
       8: { type: asteroide }
       9: { type: asteroide }
       10: { type: asteroide }
