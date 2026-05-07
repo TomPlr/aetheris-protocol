@@ -1,12 +1,16 @@
-# Généré depuis la console (2026-05-07T15:49:09.135Z)
+# Généré depuis la console (2026-05-07T15:49:49.052Z)
 version: 1
 joueur: meff
 tick_cible: 41
-nonce: dd6b54
+nonce: 8847b9
 
 ordres:
   - type: chantier
     planete: meff-prima
     batiment: extracteur_lumen
     niveau_cible: 2
-signature: ed25519:obUaTuAP6RqAqapVBuZAH22oUtgKZtCUhhxxDKhjBv+khC41edT9kWiqk+GImAmubLz8xA6z7PgAfP+qHJ8RBQ==
+  - type: construction
+    planete: meff-prima
+    unite: chasseur_leger
+    quantite: 1
+signature: ed25519:b+Anm228c9GntFUpL38ndxxiXk6+IonCIdQm3dPqpPDL0Trzul0o0EoE1GVP0pbhi5KDMVu3M2523kJxyWsoAQ==
