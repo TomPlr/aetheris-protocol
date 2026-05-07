@@ -1417,6 +1417,20 @@ const fmtCompact = n => {
 // 1 UTJ ≈ duree_tick_min / 6 (6 UTJ par tick par convention engine)
 function utjMin() { return ((state.manifest?.duree_tick_min) || 15) / 6; }
 
+// Le moteur progresse par ticks (6 UTJ par tick). Une duree affichee en UTJ
+// se traduit en N ticks = ceil(UTJ / 6). Toujours +1 tick de queue.
+function utjToTicks(utj) { return Math.max(1, Math.ceil((utj || 0) / 6)); }
+function ticksLabel(n) { return n === 1 ? '1 tick' : `${n} ticks`; }
+// Pour un chantier en file (deja queue), retourne le tick d'arrivee et minutes restantes.
+function chantierETA(remainUtj) {
+  const ticksAv = utjToTicks(remainUtj);
+  const tickArrivee = (state.manifest?.tick ?? 0) + ticksAv;
+  const info = nextTickInfo();
+  const minsToNext = info.secs / 60;
+  const mins = Math.round(minsToNext + (ticksAv - 1) * info.mins);
+  return { tickArrivee, mins };
+}
+
 function nextTickInfo() {
   const m = state.manifest;
   const mins = (m?.duree_tick_min) || 15;
@@ -1608,9 +1622,9 @@ function renderBatGrid(p, max) {
     let footer = '';
     if (q) {
       const remain = Math.max(0, q.fin_utj || 0);
-      const mins = Math.round(remain * utjMin());
+      const eta = chantierETA(remain);
       footer = `<div class="queue"><span class="pulse"></span>
-        ouvrage · niv ${q.niveau_cible} · <b style="color:var(--phosphor)">${remain} UTJ</b> <span style="color:var(--bone-dim)">≈ ${mins} min</span></div>`;
+        ouvrage · niv ${q.niveau_cible} · <b style="color:var(--phosphor)">fin tick ${eta.tickArrivee}</b> <span style="color:var(--bone-dim)">≈ ${eta.mins} min</span></div>`;
     } else if (pend) {
       footer = `<div class="queue" style="background:rgba(196,180,138,0.18);color:var(--brass)">
         <span class="pulse" style="background:var(--brass);box-shadow:0 0 0 0 rgba(196,180,138,0.6)"></span>
@@ -1618,7 +1632,7 @@ function renderBatGrid(p, max) {
     } else if (state.rules && batDef(k)) {
       const cost = nextCost(k, lvl);
       const dur = nextDureeUtj(k, lvl);
-      const mins = Math.round((dur || 0) * utjMin());
+      const ticks = utjToTicks(dur);
       const afford = canAfford(p, cost);
       const pending = state.pending.has(k);
       const costHtml = Object.entries(cost || {}).map(([res, v]) => {
@@ -1628,7 +1642,7 @@ function renderBatGrid(p, max) {
       }).join(' ');
       footer = `<div class="upg">
         <div class="cost">${costHtml}</div>
-        <span class="dur">${dur} UTJ · ${mins}m</span>
+        <span class="dur" title="+1 tick de queue avant demarrage">${ticksLabel(ticks)} <span style="color:var(--bone-dim)">+ queue</span></span>
         <button data-improve="${k}" ${(!afford || pending) ? 'disabled' : ''}>${pending ? '…' : 'Améliorer'}</button>
       </div>`;
     }
@@ -1696,8 +1710,8 @@ function renderRecGrid(emp) {
     if (isQueued) {
       const q = queue[0];
       const remain = Math.max(0, q.fin_utj || 0);
-      const rmin = Math.round(remain * utjMin());
-      footer = `<div class="queue"><span class="pulse"></span>en cours · niv ${q.niveau_cible} · <b>${remain} UTJ</b> <span style="color:var(--bone-dim)">≈ ${rmin} min</span></div>`;
+      const eta = chantierETA(remain);
+      footer = `<div class="queue"><span class="pulse"></span>en cours · niv ${q.niveau_cible} · <b>fin tick ${eta.tickArrivee}</b> <span style="color:var(--bone-dim)">≈ ${eta.mins} min</span></div>`;
     } else if (orderPending) {
       footer = `<div class="queue" style="background:rgba(196,180,138,0.18);color:var(--brass)">
         <span class="pulse" style="background:var(--brass);box-shadow:0 0 0 0 rgba(196,180,138,0.6)"></span>
@@ -1709,7 +1723,7 @@ function renderRecGrid(emp) {
       const title = reqBad ? `requiert ${missing}` : (anyOrder ? 'un autre ordre recherche est déjà signé' : '');
       footer = `<div class="upg">
         <div class="cost">${costHtml}</div>
-        <span class="dur">${dur} UTJ · ${mins}m</span>
+        <span class="dur" title="+1 tick de queue avant demarrage">${ticksLabel(utjToTicks(dur))} <span style="color:var(--bone-dim)">+ queue</span></span>
         <button data-research="${tech}" ${blocked ? 'disabled' : ''} title="${title}">${btnLbl}</button>
       </div>`;
       if (reqBad) {
@@ -1796,8 +1810,8 @@ function renderUnitGrid(p, kind) {
     let footer = '';
     if (q) {
       const remain = q.fin_utj;
-      const mins = Math.round(remain * utjMin());
-      footer += `<div class="queue"><span class="pulse"></span>en construction · <b>${q.qty} unités</b> · ${remain} UTJ <span style="color:var(--bone-dim)">≈ ${mins} min</span></div>`;
+      const eta = chantierETA(remain);
+      footer += `<div class="queue"><span class="pulse"></span>en construction · <b>${q.qty} unités</b> · fin tick ${eta.tickArrivee} <span style="color:var(--bone-dim)">≈ ${eta.mins} min</span></div>`;
     }
     if (pendQty > 0) {
       footer += `<div class="queue" style="background:rgba(196,180,138,0.18);color:var(--brass)">
