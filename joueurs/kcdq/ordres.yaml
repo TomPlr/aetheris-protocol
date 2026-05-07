@@ -1,8 +1,8 @@
-# Généré depuis la console (2026-05-07T15:07:58.217Z)
+# Généré depuis la console (2026-05-07T15:11:17.552Z)
 version: 1
 joueur: kcdq
 tick_cible: 37
-nonce: "346595"
+nonce: "fec077"
 
 ordres:
   - type: chantier
@@ -17,4 +17,7 @@ ordres:
     planete: kcdq-prima
     batiment: synthetiseur_plasmide
     niveau_cible: 1
-signature: ed25519:KpNRHO041e/QfCO1MXXKdQhQb/9r3y/56BGUMDZfmJlGTCqBj7tYji3ENOrEDBnpE9qLEvfF7wW9VdGO/f9wCw==
+  - type: recherche
+    technologie: robotique
+    niveau_cible: 1
+signature: ed25519:VDg8PhPyPaos8nqDwsvE8RA0YwIfKG1Yvwd2cfbqLW40ScGrGyDnAv9vVqYzWLH173Q2ZXlh0rqr1oI4ugt6Ag==
