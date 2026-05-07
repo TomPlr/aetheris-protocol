@@ -1,12 +1,12 @@
-# Généré depuis la console (2026-05-07T12:51:05.143Z)
+# Généré depuis la console (2026-05-07T14:28:24.695Z)
 version: 1
 joueur: kcdq
-tick_cible: 27
-nonce: a2250b
+tick_cible: 34
+nonce: d9fe96
 
 ordres:
   - type: chantier
     planete: kcdq-prima
     batiment: mine_ferrum
     niveau_cible: 1
-signature: ed25519:veXOGCtdoWm3NUMdM7yimcSeBfuIsl6F60iPpNuRDi5w9F7vq/Mer9niMaHy7GKIIQB7t36GnrncZkatbfa0Dw==
+signature: ed25519:4S+Rd0p+c78ImEcsUs4p0xfhvAt9dZFGBZKDWZqg3P56ZQIj/CWdTV9yVSUiBifENb4MuRl07y9pDoyInU7HDw==
