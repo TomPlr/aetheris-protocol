@@ -1008,12 +1008,8 @@ h2.sect .num {
     <h2>Sceau de l'envoyé</h2>
     <p class="lead">Tes ordres seront signés dans ce navigateur (Ed25519, Web Crypto) puis poussés dans le repo via l'API GitHub. Ces données restent en local.</p>
 
-    <label>Dépôt GitHub</label>
-    <input id="cfgRepo" placeholder="owner/repo · ex: meffysto/aetheris-protocol"/>
-    <div class="hint">Le repo qui contient <code>joueurs/&lt;toi&gt;/</code>.</div>
-
-    <label>Branche</label>
-    <input id="cfgBranch" placeholder="main"/>
+    <input id="cfgRepo" type="hidden"/>
+    <input id="cfgBranch" type="hidden"/>
 
     <label>Personal Access Token (fine-grained ou classique)</label>
     <input id="cfgPat" type="password" placeholder="github_pat_..."/>
@@ -1297,16 +1293,20 @@ const state = {
 // Sync URL-derived player to localStorage pour les refresh suivants.
 if (state.current) localStorage.setItem('aetheris.player', state.current);
 
+// Repo et branche canoniques — hardcodes. Ils ne sont plus exposes dans l'UI
+// pour eviter qu'un joueur pointe par erreur vers son propre fork.
+const UPSTREAM_REPO = 'meffysto/aetheris-protocol';
+const UPSTREAM_BRANCH = 'main';
 const cfg = {
-  get repo()   { return localStorage.getItem('aetheris.gh.repo')   || ''; },
-  set repo(v)  { v ? localStorage.setItem('aetheris.gh.repo', v)   : localStorage.removeItem('aetheris.gh.repo'); },
-  get branch() { return localStorage.getItem('aetheris.gh.branch') || 'main'; },
-  set branch(v){ v ? localStorage.setItem('aetheris.gh.branch', v) : localStorage.removeItem('aetheris.gh.branch'); },
+  get repo()   { return UPSTREAM_REPO; },
+  set repo(_)  { /* hardcode, no-op */ },
+  get branch() { return UPSTREAM_BRANCH; },
+  set branch(_){ /* hardcode, no-op */ },
   get pat()    { return localStorage.getItem('aetheris.gh.pat')    || ''; },
   set pat(v)   { v ? localStorage.setItem('aetheris.gh.pat', v)    : localStorage.removeItem('aetheris.gh.pat'); },
   get key()    { return localStorage.getItem('aetheris.gh.key')    || ''; },
   set key(v)   { v ? localStorage.setItem('aetheris.gh.key', v)    : localStorage.removeItem('aetheris.gh.key'); },
-  get ready()  { return !!(this.repo && this.pat && this.key); },
+  get ready()  { return !!(this.pat && this.key); },
 };
 
 /* ───────────────────────────── Iconography ──────────────────────────────── */
@@ -2320,9 +2320,21 @@ function randomNonce() {
 
 // Pousse un ordre signé : fork, branche orders/<nom>, push fichier, ouvre PR.
 // Le workflow validate-orders verifie la signature et auto-merge dans ~20s.
+// Chaque etape est encapsulee dans `step()` pour que les erreurs API GitHub
+// portent le contexte de l'etape qui a echoue (ex: "[fork] 403 ...").
 async function pushSignedOrder(canonicalBody, message) {
+  const step = async (label, fn) => {
+    try { return await fn(); }
+    catch (e) {
+      const hint = label === 'fork' && /403|404/.test(e.message)
+        ? ' — verifie que ton PAT a le scope `public_repo` (PAT classique) ou Contents+Pull-Requests Read&Write (fine-grained)'
+        : '';
+      throw new Error(`[${label}] ${e.message}${hint}`);
+    }
+  };
+
   const canonical = canonicalBody.replace(/\s+$/, '') + '\n';
-  const sig = await signCanonical(canonical, cfg.key);
+  const sig = await step('signature', () => signCanonical(canonical, cfg.key));
   const finalContent = canonical + `signature: ed25519:${sig}\n`;
   const player = state.current;
   const [upOwner, upRepo] = cfg.repo.split('/');
@@ -2330,28 +2342,32 @@ async function pushSignedOrder(canonicalBody, message) {
   const branchName = `orders/${player}`;
 
   // 1. Identite. Si l'user est owner de l'upstream : pas de fork (push direct sur upstream).
-  const me = await ghFetch('/user');
+  const me = await step('identite GitHub', () => ghFetch('/user'));
   const isOwner = me.login.toLowerCase() === upOwner.toLowerCase();
   const workRepo = isOwner ? `${upOwner}/${upRepo}` : `${me.login}/${upRepo}`;
 
   if (!isOwner) {
     // 1b. Fork (idempotent). Necessite PAT avec scope public_repo OU fine-grained "Administration: write".
-    await ghFetch(`/repos/${upOwner}/${upRepo}/forks`, { method: 'POST', body: JSON.stringify({}) });
-    for (let i = 0; i < 10; i++) {
-      try { await ghFetch(`/repos/${workRepo}`); break; }
-      catch (e) { if (i === 9) throw e; await new Promise(r => setTimeout(r, 1500)); }
-    }
+    await step('fork', () => ghFetch(`/repos/${upOwner}/${upRepo}/forks`, { method: 'POST', body: JSON.stringify({}) }));
+    await step('attente fork pret', async () => {
+      for (let i = 0; i < 10; i++) {
+        try { return await ghFetch(`/repos/${workRepo}`); }
+        catch (e) { if (i === 9) throw e; await new Promise(r => setTimeout(r, 1500)); }
+      }
+    });
     try { await ghFetch(`/repos/${workRepo}/merge-upstream`, { method: 'POST', body: JSON.stringify({ branch: baseBranch }) }); } catch {}
   }
 
   // 2. Reset (ou cree) orders/<nom> sur le tip de baseBranch.
-  const baseRef = await ghFetch(`/repos/${workRepo}/git/ref/heads/${baseBranch}`);
+  const baseRef = await step(`lecture ${baseBranch}`, () => ghFetch(`/repos/${workRepo}/git/ref/heads/${baseBranch}`));
   const baseSha = baseRef.object.sha;
-  try {
-    await ghFetch(`/repos/${workRepo}/git/refs`, { method: 'POST', body: JSON.stringify({ ref: `refs/heads/${branchName}`, sha: baseSha }) });
-  } catch (e) {
-    await ghFetch(`/repos/${workRepo}/git/refs/heads/${branchName}`, { method: 'PATCH', body: JSON.stringify({ sha: baseSha, force: true }) });
-  }
+  await step(`branche ${branchName}`, async () => {
+    try {
+      return await ghFetch(`/repos/${workRepo}/git/refs`, { method: 'POST', body: JSON.stringify({ ref: `refs/heads/${branchName}`, sha: baseSha }) });
+    } catch {
+      return await ghFetch(`/repos/${workRepo}/git/refs/heads/${branchName}`, { method: 'PATCH', body: JSON.stringify({ sha: baseSha, force: true }) });
+    }
+  });
 
   // 3. Push le fichier signe sur cette branche.
   const path = `joueurs/${player}/ordres.yaml`;
@@ -2360,11 +2376,11 @@ async function pushSignedOrder(canonicalBody, message) {
   const utf8 = new TextEncoder().encode(finalContent);
   let bin = ''; for (let i = 0; i < utf8.byteLength; i++) bin += String.fromCharCode(utf8[i]);
   const b64 = btoa(bin);
-  await ghFetch(`/repos/${workRepo}/contents/${path}`, {
+  await step('push ordres.yaml', () => ghFetch(`/repos/${workRepo}/contents/${path}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ message, branch: branchName, content: b64, ...(currentSha ? { sha: currentSha } : {}) }),
-  });
+  }));
 
   // 4. Ouvre PR (head = "branchName" si meme repo, "user:branchName" si fork).
   try {
@@ -2518,12 +2534,7 @@ function applySrcUI() {
     : 'Source : disque local. Clique pour lire le repo distant à la place.';
 }
 document.getElementById('srcBtn').onclick = () => {
-  if (state.source === 'local') {
-    if (!cfg.repo) { openSettings(); toast('Repo manquant', 'Renseigne owner/repo pour pouvoir lire depuis GitHub.', true); return; }
-    state.source = 'github';
-  } else {
-    state.source = 'local';
-  }
+  state.source = state.source === 'local' ? 'github' : 'local';
   localStorage.setItem('aetheris.source', state.source);
   applySrcUI();
   load();
@@ -2534,17 +2545,15 @@ document.getElementById('gearBtn').onclick = openSettings;
 document.getElementById('cfgCancel').onclick = closeSettings;
 document.getElementById('modalBg').onclick = e => { if (e.target.id === 'modalBg') closeSettings(); };
 document.getElementById('cfgSave').onclick = () => {
-  cfg.repo   = document.getElementById('cfgRepo').value.trim();
-  cfg.branch = document.getElementById('cfgBranch').value.trim() || 'main';
   cfg.pat    = document.getElementById('cfgPat').value.trim();
   cfg.key    = document.getElementById('cfgKey').value.trim();
   closeSettings();
-  toast('Sceau apposé', cfg.ready ? 'Tu peux maintenant donner des ordres depuis la console.' : 'Champs incomplets — renseigne les 4 pour activer.');
+  toast('Sceau apposé', cfg.ready ? 'Tu peux maintenant donner des ordres depuis la console.' : 'PAT et clé requis.');
   render();
 };
 document.getElementById('cfgClear').onclick = () => {
-  if (!confirm('Effacer PAT, clé et repo de ce navigateur ?')) return;
-  cfg.repo = ''; cfg.branch = ''; cfg.pat = ''; cfg.key = '';
+  if (!confirm('Effacer PAT et clé de ce navigateur ?')) return;
+  cfg.pat = ''; cfg.key = '';
   openSettings();
 };
 

@@ -1,8 +1,9 @@
 name: aetheris-validate-orders
 
-# Valide les PRs d'ordres sur les branches `orders/<nom>`.
+# Valide les PRs touchant joueurs/<nom>/ordres.yaml, peu importe le nom de branche.
 # Verifie : 1 fichier touche, signature Ed25519 OK, tick_cible coherent.
-# Auto-merge si tout passe.
+# Auto-merge si tout passe. Le script sort silencieusement (exit 0) sur les PRs
+# multi-fichiers (ex: inscription) — c'est validate-join qui les gere.
 
 on:
   pull_request_target:
@@ -16,7 +17,6 @@ permissions:
 
 jobs:
   validate-and-merge:
-    if: startsWith(github.event.pull_request.head.ref, 'orders/')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
