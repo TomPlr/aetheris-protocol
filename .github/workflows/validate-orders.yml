@@ -1,0 +1,64 @@
+name: aetheris-validate-orders
+
+# Valide les PRs d'ordres sur les branches `orders/<nom>`.
+# Verifie : 1 fichier touche, signature Ed25519 OK, tick_cible coherent.
+# Auto-merge si tout passe.
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'joueurs/**/ordres.yaml'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  validate-and-merge:
+    if: startsWith(github.event.pull_request.head.ref, 'orders/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+
+      - name: Fetch PR head
+        run: |
+          git fetch origin pull/${{ github.event.pull_request.number }}/head:pr-head
+          git rev-parse pr-head
+
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+
+      - name: Anti-spam (1 PR active max par auteur)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AUTHOR: ${{ github.event.pull_request.user.login }}
+          OWNER: ${{ github.repository_owner }}
+          PR_NUM: ${{ github.event.pull_request.number }}
+        run: |
+          set -e
+          if [ "$AUTHOR" = "$OWNER" ]; then
+            echo "owner — skip anti-spam"; exit 0
+          fi
+          OPEN=$(gh pr list --repo "${{ github.repository }}" --author "$AUTHOR" --state open --json headRefName --jq '[.[] | select(.headRefName | startswith("orders/"))] | length')
+          if [ "$OPEN" -gt 1 ]; then
+            gh pr comment "$PR_NUM" -b "❌ Une PR d'ordres est deja ouverte par cet auteur. Ferme l'ancienne d'abord."
+            exit 1
+          fi
+
+      - name: Validate
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: node engine/validate-orders.mjs ${{ github.event.pull_request.number }}
+
+      - name: Auto-merge
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr merge ${{ github.event.pull_request.number }} --merge --delete-branch
