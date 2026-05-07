@@ -1,25 +1,28 @@
-# Genere a l'inscription par join.html.
+# Généré par engine/tick.mjs — ne pas éditer.
 version: 1
 joueur: meff
-tick: 7
+tick: 8
 score_total: 0
 points_militaires: 0
 rang: 999
-alliance: ~
+alliance: null
 planetes:
   - nom: meff-prima
-    coordonnees: [1, 1, 7]
+    coordonnees:
+      - 1
+      - 1
+      - 7
     type: tellurique
     champs:
       utilises: 0
       total: 240
     ressources:
       ferrum:
-        stock: 500
+        stock: 620
         production_par_utj: 30
         capacite: 100000
       lumen:
-        stock: 500
+        stock: 605
         production_par_utj: 20
         capacite: 100000
       plasmide:
@@ -38,7 +41,10 @@ planetes:
       usine_robotique: 0
       chantier_spatial: 0
       laboratoire: 0
-    file_chantier: []
+    file_chantier:
+      - batiment: mine_ferrum
+        niveau_cible: 1
+        fin_utj: 1
     file_construction: []
     flotte_au_sol: {}
     defenses: {}
