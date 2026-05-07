@@ -1,7 +1,12 @@
-# Premier ordre — exemple : upgrade ta mine de ferrum.
+# Généré depuis la console (2026-05-07T12:51:05.143Z)
 version: 1
 joueur: kcdq
-tick_cible: 19
-nonce: 30d73b
+tick_cible: 27
+nonce: a2250b
 
-ordres: []
+ordres:
+  - type: chantier
+    planete: kcdq-prima
+    batiment: mine_ferrum
+    niveau_cible: 1
+signature: ed25519:veXOGCtdoWm3NUMdM7yimcSeBfuIsl6F60iPpNuRDi5w9F7vq/Mer9niMaHy7GKIIQB7t36GnrncZkatbfa0Dw==
