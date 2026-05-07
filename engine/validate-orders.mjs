@@ -205,10 +205,22 @@ async function comment(body) {
     body: JSON.stringify({ body }),
   });
 }
+async function closePR() {
+  await fetch(`https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUM}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${GH_TOKEN}`, 'Content-Type': 'application/json', Accept: 'application/vnd.github+json' },
+    body: JSON.stringify({ state: 'closed' }),
+  });
+}
 
 if (errors.length > 0) {
-  const body = `## ❌ Ordre refuse\n\n${errors.map(e => `- ${e}`).join('\n')}\n\nCorrige et re-pousse.`;
+  // Auto-close des PRs invalides : evite la pollution (surtout sur les
+  // tentatives d'impersonation ou les nonces malformes). Le joueur peut
+  // toujours rouvrir une nouvelle PR depuis sa console — chaque rejet est
+  // terminal, pas de PR fantome qui traine en attente.
+  const body = `## ❌ Ordre refuse — PR fermee\n\n${errors.map(e => `- ${e}`).join('\n')}\n\nRe-genere depuis ta console pour re-soumettre.`;
   await comment(body);
+  await closePR();
   console.error(body);
   process.exit(1);
 }
