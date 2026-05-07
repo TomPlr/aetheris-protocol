@@ -1,12 +1,12 @@
-# Généré depuis la console (2026-05-07T09:05:42.886Z)
+# Généré depuis la console (2026-05-07T11:34:30.723Z)
 version: 1
 joueur: meff
-tick_cible: 10
-nonce: f2a491
+tick_cible: 22
+nonce: fdf3ee
 
 ordres:
   - type: chantier
     planete: meff-prima
     batiment: mine_ferrum
-    niveau_cible: 2
-signature: ed25519:R2yGINxKGZ1TDbHuYtxNojloAgE8H+toF/RhAyxHqRCVtgVxDac8Z82bI2wpJPrHo6MBqtwHhXbgF8NLKC7DAQ==
+    niveau_cible: 3
+signature: ed25519:Js+U9UvdNe8wjDP9/X+8A7TKGmLsI5Q5Yu2aZZUvbd6hI0gWhaukuwenukQBSAiMy5Acw5eH6Pc6dBzsJfSoAg==
