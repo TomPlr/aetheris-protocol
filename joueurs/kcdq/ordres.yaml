@@ -1,12 +1,11 @@
-# Généré depuis la console (2026-05-07T15:02:58.910Z)
+# Généré depuis la console (2026-05-07T15:03:44.007Z)
 version: 1
 joueur: kcdq
 tick_cible: 37
-nonce: "2372cd"
+nonce: "58c66e"
 
 ordres:
-  - type: chantier
-    planete: kcdq-prima
-    batiment: mine_ferrum
-    niveau_cible: 2
-signature: ed25519:azOM2kC2YXjfT7XP5dn5IFX3zRN5rSs5rF1Ym8scdquGX21WO2EqY/8ACHDw+OvAfQ+KwEXCj0S8Fte0Fsk7CA==
+  - type: recherche
+    technologie: robotique
+    niveau_cible: 1
+signature: ed25519:y2y4ldkcKGyxoE7HAZRnmnlWBLFxCkNbTMcYwmX4Snn21m/iuIkAZ0gWfSc8POa0F7wRJw4/ot/MdXcIixKYCg==
