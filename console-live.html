@@ -1201,11 +1201,13 @@ const state = {
   galaxie: null,
   rules: null,
   players: {},
-  current: localStorage.getItem('aetheris.player') || null,
+  current: (new URLSearchParams(location.search).get('joueur')) || localStorage.getItem('aetheris.player') || null,
   view: localStorage.getItem('aetheris.view') || 'overview',
   source: localStorage.getItem('aetheris.source') || 'local',
   pending: new Set(),
 };
+// Sync URL-derived player to localStorage pour les refresh suivants.
+if (state.current) localStorage.setItem('aetheris.player', state.current);
 
 const cfg = {
   get repo()   { return localStorage.getItem('aetheris.gh.repo')   || ''; },
