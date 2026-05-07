@@ -1,7 +1,7 @@
 # Généré par engine/tick.mjs — ne pas éditer.
 version: 1
 joueur: kael
-tick: 29
+tick: 30
 score_total: 300
 points_militaires: 0
 rang: 999
@@ -18,11 +18,11 @@ planetes:
       total: 221
     ressources:
       ferrum:
-        stock: 20126
+        stock: 20870
         production_par_utj: 124
         capacite: 100000
       lumen:
-        stock: 7351
+        stock: 7603
         production_par_utj: 42
         capacite: 100000
       plasmide:
