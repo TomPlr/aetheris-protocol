@@ -1080,12 +1080,12 @@ h2.sect .num {
 
 <div class="onboarding-bg" id="obBg">
   <div class="onboarding">
-    <h2>Bienvenue, commandant.</h2>
-    <p class="ob-sub">Tu contrôles <strong id="ob-planet">—</strong>. Voici ton premier mouvement.</p>
+    <h2>Bienvenue, <span id="ob-name">commandant</span>.</h2>
+    <p class="ob-sub">Tu contrôles <strong id="ob-planet">—</strong>. Le moteur tourne toutes les <b>15 minutes</b> — chaque ordre signé est appliqué au prochain tick.</p>
     <ol>
       <li>Dans la barre de gauche, clique <strong>Bâtiments</strong></li>
       <li>Sur la carte <em>Mine de Ferrum</em>, clique <strong>Améliorer →</strong></li>
-      <li>L'ordre est signé et poussé — il sera exécuté au prochain tick</li>
+      <li>L'ordre est signé localement avec ta clé, poussé dans le repo, et exécuté au prochain tick</li>
     </ol>
     <div class="ob-actions">
       <button class="ob-skip" onclick="closeOnboarding(false)">Plus tard</button>
@@ -2680,8 +2680,11 @@ document.getElementById('cfgSave').onclick = () => {
   render();
 };
 document.getElementById('cfgClear').onclick = () => {
-  if (!confirm('Effacer connexion GitHub et clé de ce navigateur ?')) return;
+  if (!confirm('Effacer connexion GitHub, clé et pseudo de ce navigateur ?')) return;
   cfg.pat = ''; cfg.key = '';
+  localStorage.removeItem('aetheris.player');
+  localStorage.removeItem('aetheris.onboarding.done');
+  state.current = null;
   openSettings();
 };
 
@@ -2812,6 +2815,8 @@ document.getElementById('missionSubmit').onclick = () => {
 /* ───────────────────────────── Onboarding ──────────────────────────────── */
 function showOnboarding(planetName) {
   if (localStorage.getItem('aetheris.onboarding.done')) return;
+  if (!cfg.ready) return; // attend que la connexion + cle soient prets
+  document.getElementById('ob-name').textContent = state.current || 'commandant';
   document.getElementById('ob-planet').textContent = planetName;
   document.getElementById('obBg').classList.add('on');
 }
