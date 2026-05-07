@@ -48,6 +48,9 @@
   .intro .nav-back { background:transparent; color:var(--dim); border:0; cursor:pointer; font:inherit; padding:10px 0; }
   .intro .nav-back:hover { color:var(--fg); }
   kbd { background:#070a0e; border:1px solid var(--line); border-radius:3px; padding:1px 6px; font-size:12px; color:var(--acc); }
+  .key-drop { border:2px dashed var(--line); border-radius:6px; padding:18px; text-align:center; color:var(--dim); font-size:13px; cursor:pointer; transition:border-color .15s, background .15s; user-select:none; }
+  .key-drop:hover, .key-drop.over { border-color:var(--acc); background:rgba(109,194,202,0.04); color:var(--acc); }
+  .key-drop code { color:var(--acc); }
 </style>
 </head>
 <body>
@@ -130,6 +133,11 @@
       <div class="hint">Place-le dans <code>joueurs/&lt;ton-pseudo&gt;/.key.pem</code> (mode 600) si tu joues en local.</div>
       <div style="margin-top:16px">
         <button id="btn-key-ok" disabled>J'ai telecharge — continuer</button>
+      </div>
+      <div id="key-verify-wrap" style="margin-top:20px;display:none">
+        <label style="margin-bottom:8px">Verification (optionnel)</label>
+        <div class="key-drop" id="key-drop">Depose ton <code>.key.pem</code> ici — ou clique pour selectionner</div>
+        <div id="key-verify-msg" hidden></div>
       </div>
     </section>
 
@@ -585,6 +593,42 @@ $('btn-download').addEventListener('click', () => {
   a.click();
   URL.revokeObjectURL(url);
   $('btn-key-ok').disabled = false;
+  $('key-verify-wrap').style.display = '';
+});
+
+async function verifyDroppedKey(file) {
+  const msgEl = $('key-verify-msg');
+  const setMsg = (ok, text) => {
+    msgEl.hidden = false;
+    msgEl.style.cssText = ok
+      ? 'background:#061306;color:#6dc2ca;border:1px solid #346524;margin-top:8px;font-size:12px;padding:8px 12px;border-radius:4px'
+      : 'background:#1c0c0c;color:#f5b8b8;border:1px solid #d04648;margin-top:8px;font-size:12px;padding:8px 12px;border-radius:4px';
+    msgEl.textContent = text;
+  };
+  try {
+    const text = await file.text();
+    const b64 = text.replace(/-----[^-]+-----/g, '').replace(/\s+/g, '');
+    const pkcs8 = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+    const privKey = await crypto.subtle.importKey('pkcs8', pkcs8.buffer, {name:'Ed25519'}, false, ['sign']);
+    const msg = new TextEncoder().encode('aetheris-key-verify');
+    const sig = await crypto.subtle.sign('Ed25519', privKey, msg);
+    const spki = Uint8Array.from(atob(state.pubB64), c => c.charCodeAt(0));
+    const pubKey = await crypto.subtle.importKey('spki', spki.buffer, {name:'Ed25519'}, false, ['verify']);
+    const ok = await crypto.subtle.verify('Ed25519', pubKey, sig, msg);
+    setMsg(ok, ok ? '✓ Cle verifiee — correspond bien a ton compte' : '✗ Ce fichier ne correspond pas a ta cle generee');
+  } catch {
+    setMsg(false, '✗ Impossible de lire ce fichier — verifie que c\'est bien le .key.pem telecharge');
+  }
+}
+
+const keyDrop = $('key-drop');
+['dragenter','dragover'].forEach(ev => keyDrop.addEventListener(ev, e => { e.preventDefault(); keyDrop.classList.add('over'); }));
+['dragleave','drop'].forEach(ev => keyDrop.addEventListener(ev, () => keyDrop.classList.remove('over')));
+keyDrop.addEventListener('drop', e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) verifyDroppedKey(f); });
+keyDrop.addEventListener('click', () => {
+  const inp = Object.assign(document.createElement('input'), {type:'file', accept:'.pem'});
+  inp.onchange = () => { if (inp.files[0]) verifyDroppedKey(inp.files[0]); };
+  inp.click();
 });
 
 $('btn-key-ok').addEventListener('click', async () => {
