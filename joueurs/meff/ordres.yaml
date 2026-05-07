@@ -1,7 +1,12 @@
-# Premier ordre — exemple : upgrade ta mine de ferrum.
+# Généré depuis la console (2026-05-07T07:40:31.026Z)
 version: 1
 joueur: meff
 tick_cible: 8
-nonce: d8a1dd
+nonce: ee359d
 
-ordres: []
+ordres:
+  - type: chantier
+    planete: meff-prima
+    batiment: mine_ferrum
+    niveau_cible: 1
+signature: ed25519:lY06vi4D7TNdhW79SKVo7AKi+MBDMwkQ8l9F3GwcNQ5ZTNH+nRucjueFCTqFDUkpPd4/7m3ABUjbSoxoetnMAg==
