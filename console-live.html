@@ -654,6 +654,76 @@ h2.sect .num {
   color: var(--bone-dim); font-size: 13px;
   padding: 6px 0;
 }
+.qitem.pending .cancel-btn {
+  position: absolute; top: 8px; right: 10px;
+  appearance: none; background: none; border: none;
+  color: var(--bone-dim); cursor: pointer;
+  font-size: 13px; line-height: 1; padding: 4px 6px;
+  border-radius: 4px; transition: color .12s, background .12s;
+}
+.qitem.pending .cancel-btn:hover { color: var(--phosphor); background: rgba(168,58,37,0.1); }
+.qitem.pending .cancel-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* ─── onboarding modal ────────────────────────────────────── */
+.onboarding-bg {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(14,29,51,0.55);
+  backdrop-filter: blur(6px);
+  display: none; align-items: center; justify-content: center;
+}
+.onboarding-bg.on { display: flex; }
+.onboarding {
+  width: 430px; max-width: 92vw;
+  background: var(--ink-2);
+  border-radius: 18px;
+  box-shadow: 0 28px 90px rgba(14,29,51,0.38);
+  padding: 32px 32px 28px;
+}
+.onboarding h2 {
+  margin: 0 0 8px; font-family: var(--display); font-weight: 600; font-style: normal;
+  font-size: 24px; color: var(--bone-2); letter-spacing: -0.01em;
+}
+.onboarding .ob-sub {
+  margin: 0 0 20px; color: var(--bone-dim); font-size: 14px; line-height: 1.55;
+}
+.onboarding ol {
+  margin: 0 0 24px; padding-left: 0; list-style: none;
+  counter-reset: ob;
+}
+.onboarding ol li {
+  counter-increment: ob;
+  display: flex; gap: 12px; align-items: flex-start;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--hairline);
+  font-size: 13.5px; line-height: 1.4; color: var(--bone);
+}
+.onboarding ol li:last-child { border-bottom: none; }
+.onboarding ol li::before {
+  content: counter(ob);
+  min-width: 22px; height: 22px;
+  background: var(--brass); color: #fff;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  font-family: var(--mono); font-size: 11px; font-weight: 700;
+  flex-shrink: 0; margin-top: 1px;
+}
+.onboarding .ob-actions {
+  display: flex; gap: 10px; align-items: center; justify-content: flex-end;
+}
+.onboarding .ob-skip {
+  font-size: 13px; color: var(--bone-dim); cursor: pointer;
+  background: none; border: none; padding: 8px; font-family: var(--sans);
+  transition: color .12s;
+}
+.onboarding .ob-skip:hover { color: var(--bone); }
+.onboarding .ob-go {
+  appearance: none; background: var(--brass); color: #fff;
+  border: none; padding: 11px 20px;
+  border-radius: var(--r-pill);
+  font-family: var(--sans); font-weight: 700;
+  font-size: 13px; cursor: pointer; transition: all .12s;
+}
+.onboarding .ob-go:hover { background: var(--brass-2); transform: translateY(-1px); }
 
 /* ─── footer ──────────────────────────────────────────────── */
 .foot {
@@ -939,7 +1009,7 @@ h2.sect .num {
     <p class="lead">Tes ordres seront signés dans ce navigateur (Ed25519, Web Crypto) puis poussés dans le repo via l'API GitHub. Ces données restent en local.</p>
 
     <label>Dépôt GitHub</label>
-    <input id="cfgRepo" placeholder="owner/repo · ex: gabrielwaltio/aetheris-protocol"/>
+    <input id="cfgRepo" placeholder="owner/repo · ex: meffysto/aetheris-protocol"/>
     <div class="hint">Le repo qui contient <code>joueurs/&lt;toi&gt;/</code>.</div>
 
     <label>Branche</label>
@@ -995,6 +1065,22 @@ h2.sect .num {
     <div class="actions">
       <button class="ghost" id="missionCancel">Annuler</button>
       <button class="primary" id="missionSubmit">Signer et envoyer</button>
+    </div>
+  </div>
+</div>
+
+<div class="onboarding-bg" id="obBg">
+  <div class="onboarding">
+    <h2>Bienvenue, commandant.</h2>
+    <p class="ob-sub">Tu contrôles <strong id="ob-planet">—</strong>. Voici ton premier mouvement.</p>
+    <ol>
+      <li>Dans la barre de gauche, clique <strong>Bâtiments</strong></li>
+      <li>Sur la carte <em>Mine de Ferrum</em>, clique <strong>Améliorer →</strong></li>
+      <li>L'ordre est signé et poussé — il sera exécuté au prochain tick</li>
+    </ol>
+    <div class="ob-actions">
+      <button class="ob-skip" onclick="closeOnboarding(false)">Plus tard</button>
+      <button class="ob-go" onclick="closeOnboarding(true)">Aller aux Bâtiments →</button>
     </div>
   </div>
 </div>
@@ -1492,6 +1578,8 @@ function render() {
 
   document.getElementById('lastRefresh').textContent =
     new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+  if (p) showOnboarding(p.nom);
 }
 
 function renderNavCounts(p, emp) {
@@ -1941,8 +2029,11 @@ function renderRail(p, emp) {
   let html = '';
 
   // Ordres en attente (pas encore traités par le moteur)
-  for (const o of pending) {
+  const cancelLocked = state.pending.has('cancelOrder');
+  for (let pi = 0; pi < pending.length; pi++) {
+    const o = pending[pi];
     html += `<div class="qitem pending">
+      <button class="cancel-btn" data-cancel-idx="${pi}" ${cancelLocked ? 'disabled' : ''} title="Retirer cet ordre">✕</button>
       <div class="top">
         <div class="nm">${labels[o.batiment] || o.batiment}<small>niveau ${o.niveau_cible} · en attente</small></div>
         <div class="tgt" style="color:var(--brass)">∙∙∙<small style="font-family:var(--sans);font-size:9.5px;font-weight:600;letter-spacing:0.04em;color:var(--bone-dim);display:block;margin-top:4px;text-align:right;text-transform:uppercase">tick ${tickCible}</small></div>
@@ -2151,6 +2242,35 @@ function serializeOrder(o) {
     flotte: ${inlineMap(o.flotte)}
     cargaison: ${inlineMap(o.cargaison || {})}`;
   throw new Error(`serializeOrder: type inconnu "${o.type}"`);
+}
+
+document.getElementById('rail').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-cancel-idx]'); if (!btn) return;
+  cancelOrder(parseInt(btn.dataset.cancelIdx, 10));
+});
+
+async function cancelOrder(idx) {
+  const emp = state.players[state.current];
+  if (!emp?._ordres) return;
+  if (!cfg.ready) { openSettings(); toast('Paramètres requis', 'Renseigne PAT, repo et clé pour modifier les ordres.', true); return; }
+  if (state.pending.has('cancelOrder')) return;
+
+  const tickCible = emp._ordres.tick_cible;
+  const ordres = (emp._ordres.ordres || []).filter((_, i) => i !== idx);
+  const nonce = randomNonce();
+  const orderBlocks = ordres.map(serializeOrder);
+  const body = buildOrdresYamlOrders({ joueur: state.current, tickCible, nonce, orderBlocks });
+
+  state.pending.add('cancelOrder'); render();
+  try {
+    await pushSignedOrder(body, `${state.current}: annule ordre ${idx + 1} (tick ${tickCible})`);
+    emp._ordres = { ...emp._ordres, ordres };
+    toast('Ordre retiré', ordres.length ? `File mise à jour (${ordres.length} ordre${ordres.length > 1 ? 's' : ''} restant).` : 'File vidée.');
+  } catch (e) {
+    toast('Échec', e.message || String(e), true);
+  } finally {
+    state.pending.delete('cancelOrder'); render();
+  }
 }
 
 // Empile un nouvel ordre dans ordres.yaml (ou repart d'une liste vide si l'ancien
@@ -2551,6 +2671,22 @@ document.getElementById('missionSubmit').onclick = () => {
   }
   submitMission(payload);
 };
+
+/* ───────────────────────────── Onboarding ──────────────────────────────── */
+function showOnboarding(planetName) {
+  if (localStorage.getItem('aetheris.onboarding.done')) return;
+  document.getElementById('ob-planet').textContent = planetName;
+  document.getElementById('obBg').classList.add('on');
+}
+function closeOnboarding(goToBat) {
+  localStorage.setItem('aetheris.onboarding.done', '1');
+  document.getElementById('obBg').classList.remove('on');
+  if (goToBat) {
+    state.view = 'batiments';
+    localStorage.setItem('aetheris.view', 'batiments');
+    applyView();
+  }
+}
 
 /* ───────────────────────────── Toast ────────────────────────────────────── */
 let toastTimer = null;
